@@ -65,8 +65,8 @@ def pyton_operators(items):
 def calc(update, context):
     print('Вызван /calc')
     user_text = ''.join(update.message.text.split(' ')[1:])
-    print(user_text)
     operators_list = ['*', '/', '+', '-']
+# Создание списка чисел и списка операций из пользовательского текста
     user_numbers = []
     user_operators = []
     num = ''
@@ -78,14 +78,15 @@ def calc(update, context):
         else:
             num += symbol
     user_numbers.append(float(num))
-    user_operators = pyton_operators(user_operators)
-    print(user_numbers)
-    print(user_operators)
+    user_operators = pyton_operators(user_operators) #Функция преобразует список операторов формата str, в список операторов модуля operator.
+    # обработка операций умножения, деления
     for oper in tuple(user_operators):
         if oper is operator.mul:
-            make_operation(operator.mul, user_numbers, user_operators)
+            make_operation(operator.mul, user_numbers, user_operators) # Функция производит операцию c элементами i, i+1 списка номеров,
+# результат присваивается элементу i, элемент i+1 удаляется.
         if oper is operator.truediv:
             make_operation(operator.truediv, user_numbers, user_operators)
+    # обработка операций сложения, вычитания
     for oper in tuple(user_operators):
         if oper is operator.add:
             make_operation(operator.add, user_numbers, user_operators)
