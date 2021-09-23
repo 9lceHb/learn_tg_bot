@@ -1,11 +1,14 @@
 from telegram import ReplyKeyboardRemove, ReplyKeyboardMarkup, replymarkup
+from telegram.ext import ConversationHandler
 
+
+def anketa_keyboard():
+    return ReplyKeyboardMarkup([['name', 'age']])
 
 def anketa_start(update, context):
-    print('hi')
     update.message.reply_text(
         'Как вас зовут(Имя, Фамилия)?',
-          reply_markup=ReplyKeyboardRemove()
+          reply_markup=anketa_keyboard()
      )
     return 'name'
 
@@ -17,9 +20,21 @@ def anketa_name(update, context):
         return 'name'
     else:
         context.user_data['anketa'] = {'name': user_name}
-        reply_keyboard = [['1', '2', '3', '4', '5']]
         update.message.reply_text(
-            'Пожалуйста оцените бота от 1 до 5',
-            reply_markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True)
-        )
-    return 'rating'
+            'Пожалуйста введите возраст', reply_markup=anketa_keyboard())
+    return 'age'
+
+
+def anketa_age(update, context):
+    user_age = update.message.text
+    try:
+        user_age = int(user_age)
+        if user_age > 0 and user_age < 100:
+            context.user_data['anketa']['age'] = user_age
+        else:
+            update.message.reply_text('Пожалуйста введите корректный возраст', reply_markup=anketa_keyboard())
+            return 'age'
+    except ValueError:
+        update.message.reply_text('Пожалуйста введите корректный возраст', reply_markup=anketa_keyboard())
+        return 'age'
+    return ConversationHandler.END

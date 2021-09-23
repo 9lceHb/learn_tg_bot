@@ -1,11 +1,11 @@
 
 import logging
-from datetime import datetime
+# from datetime import datetime
 import settings
 
-from telegram import ReplyKeyboardMarkup
+from telegram import ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, ConversationHandler
-from anketa import anketa_start, anketa_name
+from anketa import anketa_start, anketa_name, anketa_age
 
 
 logging.basicConfig(format='%(name)s - %(levelname)s - %(message)s',
@@ -21,15 +21,17 @@ logging.basicConfig(format='%(name)s - %(levelname)s - %(message)s',
 #     }
 # }
 
+#def my_keyboard():
+   #return ReplyKeyboardMarkup([['Заполнить анкету']])
+
 def my_keyboard():
-    return ReplyKeyboardMarkup([['Заполнить анкету']])
+   #return ReplyKeyboardMarkup([['Заполнить анкету']])
 
 
 def greet_user(update, context):
     text = 'Привет, я бот, который поможет вам найти работу или работника). Моя область поиска медицинские учереждения, стоматология.'
     my_keyboardd = my_keyboard()
-    print(text)
-    #my_keyboard = ReplyKeyboardMarkup([['Ищу работу', 'Ищу сотрудника']])
+    # my_keyboard = ReplyKeyboardMarkup([['Ищу работу', 'Ищу сотрудника']])
     update.message.reply_text(text, reply_markup=my_keyboardd)
 
 
@@ -40,7 +42,7 @@ def talk_to_me(update, context):
 
 
 def main():
-    mybot = Updater(settings.API_KEY, use_context=True)# request_kwargs=PROXY
+    mybot = Updater(settings.API_KEY, use_context=True)  # request_kwargs=PROXY
 
     dp = mybot.dispatcher
 
@@ -49,7 +51,8 @@ def main():
             MessageHandler(Filters.regex('^(Заполнить анкету)$'), anketa_start)
         ],
         states={
-            'name': [MessageHandler(Filters.text, anketa_name)]
+            'name': [MessageHandler(Filters.text, anketa_name)],
+            'age': [MessageHandler(Filters.text, anketa_age)]
         },
         fallbacks=[]
     )
