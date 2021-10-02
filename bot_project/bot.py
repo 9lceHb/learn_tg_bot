@@ -3,10 +3,10 @@ import logging
 # from datetime import datetime
 import settings
 
-from telegram import ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, ConversationHandler
-from anketa import anketa_start, anketa_name, anketa_age
-
+from telegram import ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup, Update, ReplyKeyboardRemove
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, ConversationHandler, CallbackQueryHandler, CallbackContext
+from anketa import anketa_expirience, anketa_komment, anketa_location, step_name, step_age, step_expirience, step_komment, step_location
+from anketa import anketa_start, anketa_name, anketa_age, anketa_expirience, anketa_komment, anketa_location, anketa_fallback
 
 logging.basicConfig(format='%(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO,
@@ -21,48 +21,38 @@ logging.basicConfig(format='%(name)s - %(levelname)s - %(message)s',
 #     }
 # }
 
-#def my_keyboard():
-   #return ReplyKeyboardMarkup([['Заполнить анкету']])
+logger = logging.getLogger(__name__)
 
-def my_keyboard():
-   #return ReplyKeyboardMarkup([['Заполнить анкету']])
+def start_keyboard():
+    return ReplyKeyboardMarkup([
+        ['Заполнить анкету']
+            ], resize_keyboard=True)
 
-
-def greet_user(update, context):
-    text = 'Привет, я бот, который поможет вам найти работу или работника). Моя область поиска медицинские учереждения, стоматология.'
-    my_keyboardd = my_keyboard()
-    # my_keyboard = ReplyKeyboardMarkup([['Ищу работу', 'Ищу сотрудника']])
-    update.message.reply_text(text, reply_markup=my_keyboardd)
-
-
-def talk_to_me(update, context):
-    user_text = update.message.text
-    print(user_text)
-    update.message.reply_text('Пожалуйста используйте команду: /planet (any planet)')
-
-
-def main():
+def start(update: Update, context: CallbackContext) -> int:
+    reply_markup = start_keyboard()
+    update.message.reply_text(
+        "Привет, я бот, который поможет тебе найти работу или сотрудника, моя область - медицина",
+     reply_markup=reply_markup)
+    
+def main() -> None:
     mybot = Updater(settings.API_KEY, use_context=True)  # request_kwargs=PROXY
-
     dp = mybot.dispatcher
 
-    anketa = ConversationHandler(
-        entry_points=[
-            MessageHandler(Filters.regex('^(Заполнить анкету)$'), anketa_start)
-        ],
+    anketa_handler = ConversationHandler(
+        entry_points=[MessageHandler(Filters.regex('^(Заполнить анкету)$'), anketa_start)],
         states={
-            'name': [MessageHandler(Filters.text, anketa_name)],
-            'age': [MessageHandler(Filters.text, anketa_age)]
+            step_name: [MessageHandler(Filters.text, anketa_name)],
+            step_age: [MessageHandler(Filters.text, anketa_age)],
+            step_expirience: [MessageHandler(Filters.text, anketa_expirience)],
+            step_komment: [MessageHandler(Filters.text, anketa_komment)],   
+            step_location: [MessageHandler(Filters.text, anketa_location)]
         },
-        fallbacks=[]
-    )
-    dp.add_handler(anketa)
-    dp.add_handler(CommandHandler("start", greet_user))
-    dp.add_handler(MessageHandler(Filters.text, talk_to_me))
+        fallbacks=[MessageHandler(Filters.text | Filters.photo | Filters.video, anketa_fallback)])
 
+    dp.add_handler(CommandHandler('start', start))
+    dp.add_handler(anketa_handler)
     mybot.start_polling()
     mybot.idle()
 
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
