@@ -22,7 +22,8 @@ from anketa import (
     anketa_komment,
     anketa_location,
     anketa_fallback,
-    end_describing
+    end_describing,
+    find_work
 )
 
 from anketa import (
@@ -54,7 +55,7 @@ logger = logging.getLogger(__name__)
 
 def start_keyboard():
     return ReplyKeyboardMarkup([
-        ['Заполнить анкету']
+        ['Найти работу'], ['Найти сотрудника']
             ], resize_keyboard=True)
 
 
@@ -62,7 +63,7 @@ def start(update: Update, context: CallbackContext) -> int:
     reply_markup = start_keyboard()
     update.message.reply_text(
         "Привет, я бот, который поможет тебе найти работу или сотрудника, моя"
-        " область - медицина",
+        " область - медицина. Пожалуйста укажите, для чего вы используете бота?",
         reply_markup=reply_markup)
 
 
@@ -110,6 +111,10 @@ def main() -> None:
         )
 
     dp.add_handler(CommandHandler('start', start))
+    dp.add_handler(MessageHandler(
+        Filters.regex('^(Найти работу)$'),
+        find_work)
+        )
     dp.add_handler(anketa_handler)
     mybot.start_polling()
     mybot.idle()

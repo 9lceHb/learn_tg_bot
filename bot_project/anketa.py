@@ -1,10 +1,17 @@
 from telegram import (
     ReplyKeyboardRemove,
+    ReplyKeyboardMarkup,
     InlineKeyboardButton,
-    InlineKeyboardMarkup
+    InlineKeyboardMarkup,
+    callbackquery,
+    replymarkup
 )
 
 from telegram.ext import ConversationHandler
+
+from DbFolder.db import db_session
+from DbFolder.models import Applicant
+
 
 (
     STEP_NAME,
@@ -56,7 +63,7 @@ def print_anketa_info(update, context):
     update.message.reply_text(
         f'''
         Ваши данные:
-        Имя: {context.user_data['anketa']['name'] if context.user_data.get('anketa') else 'Значение не установлено'}
+        Имя: {context.user_data['anketa']['name'] if context.user_data['anketa'].get('name') else 'Значение не установлено'}
         Возраст: {context.user_data['anketa']['age'] if context.user_data['anketa'].get('age') else 'Значение не установлено'}
         Опыт: {context.user_data['anketa']['expirience'] if context.user_data['anketa'].get('expirience') else 'Значение не установлено'}
         Комментарий: {context.user_data['anketa']['komment'] if context.user_data['anketa'].get('komment') else 'Значение не установлено'}
@@ -66,6 +73,17 @@ def print_anketa_info(update, context):
 
 
 def anketa_start(update, context):
+    #tg_id = update['message']['chat']['id']
+    user = Applicant(
+        tg_id=1111)
+    db_session.add(user)
+
+    try:
+        db_session.commit()
+    except Exception as e:
+        db_session.rollback()
+        print(str(e))
+
     context.user_data['anketa'] = {}
     update.message.reply_text(
         'Заполнение анкеты',
@@ -77,6 +95,14 @@ def anketa_start(update, context):
     return STEP_INPUT
 
 
+def find_work(update, context):
+    text = 'Вы можете смотеть вакансии или заполнить анкету, чтобы работодатель мог найти вас.'
+    keyboard = ReplyKeyboardMarkup([
+        ['Заполнить анкету'], ['Смотреть вакансии']
+            ], resize_keyboard=True)
+    update.message.reply_text(text=text, reply_markup=keyboard)
+
+
 def anketa_name(update, context):
 
     user_name = update.message.text
@@ -85,8 +111,6 @@ def anketa_name(update, context):
         return STEP_NAME
     else:
         context.user_data['anketa']['name'] = user_name
-        print(user_name)
-        print(context.user_data['anketa']['name'])
         print_anketa_info(update, context)
     return STEP_INPUT
 
@@ -134,8 +158,6 @@ def anketa_location(update, context):
     user_location = update.message.text
     context.user_data['anketa']['location'] = user_location
     print_anketa_info(update, context)
-    print(context.user_data)
-    print(update)
     return STEP_INPUT
 
 
@@ -144,6 +166,22 @@ def anketa_fallback(update, context):
 
 
 def end_describing(update, context):
+    # tg_id = update['callback_query']['message']['chat']['id']
+    # name = context.user_data['anketa']['name']
+    # age = context.user_data['anketa']['age']
+    # expirience = context.user_data['anketa']['expirience']
+    # komment = context.user_data['anketa']['komment']
+    # location = context.user_data['anketa']['location']
+    # print(tg_id, name, age, expirience, komment, location)
+    # user = Applicant(
+    #     tg_id=1111,
+    #     name=context.user_data['anketa']['name'], 
+    #     age=context.user_data['anketa']['age'], 
+    #     expirience=context.user_data['anketa']['expirience'],
+    #     komment=context.user_data['anketa']['komment'],
+    #     location=context.user_data['anketa']['location'])
+    # db_session.add(user)
+    # db_session.commit()
     text = 'Вы завершили заполнение анкеты'
     update.callback_query.answer()
     update.callback_query.edit_message_text(text=text)
