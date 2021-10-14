@@ -9,9 +9,7 @@ from telegram import (
 
 from telegram.ext import ConversationHandler
 
-from DbFolder.db import db_session
-from DbFolder.models import Applicant
-
+from DbFolder.db import db, get_or_create_user, save_anketa
 
 (
     STEP_NAME,
@@ -59,32 +57,32 @@ def anketa_keyboard():
     return InlineKeyboardMarkup(anketa_buttons)
 
 
-def print_anketa_info(update, context):
+def ask_for_input(update, context):
+    """Prompt user to input data for selected feature."""
+    context.user_data['CURRENT_FEATURE'] = update.callback_query.data
+    user_data_key = context.user_data['CURRENT_FEATURE']
+    text = f'Пожалуйста введите значение для поля-{step_dict[user_data_key]}:'
+    update.callback_query.answer()
+    update.callback_query.edit_message_text(text=text)
+    return user_data_key
+
+
+def print_anketa_info(update, context, db):
+    tg_id = update.effective_user.id
+    user = db.users.find_one({'tg_id': tg_id})
     update.message.reply_text(
         f'''
         Ваши данные:
-        Имя: {context.user_data['anketa']['name'] if context.user_data['anketa'].get('name') else 'Значение не установлено'}
-        Возраст: {context.user_data['anketa']['age'] if context.user_data['anketa'].get('age') else 'Значение не установлено'}
-        Опыт: {context.user_data['anketa']['expirience'] if context.user_data['anketa'].get('expirience') else 'Значение не установлено'}
-        Комментарий: {context.user_data['anketa']['komment'] if context.user_data['anketa'].get('komment') else 'Значение не установлено'}
-        Место жительства: {context.user_data['anketa']['location'] if context.user_data['anketa'].get('location') else 'Значение не установлено'}
+        Имя: {user['anketa']['name'] if user['anketa'].get('name') else 'Значение не установлено'}
+        Возраст: {user['anketa']['age'] if user['anketa'].get('age') else 'Значение не установлено'}
+        Опыт: {user['anketa']['expirience'] if user['anketa'].get('expirience') else 'Значение не установлено'}
+        Комментарий: {user['anketa']['komment'] if user['anketa'].get('komment') else 'Значение не установлено'}
+        Место жительства: {user['anketa']['location'] if user['anketa'].get('location') else 'Значение не установлено'}
         ''', reply_markup=anketa_keyboard()
         )
 
 
 def anketa_start(update, context):
-    #tg_id = update['message']['chat']['id']
-    user = Applicant(
-        tg_id=1111)
-    db_session.add(user)
-
-    try:
-        db_session.commit()
-    except Exception as e:
-        db_session.rollback()
-        print(str(e))
-
-    context.user_data['anketa'] = {}
     update.message.reply_text(
         'Заполнение анкеты',
         reply_markup=ReplyKeyboardRemove()
@@ -95,23 +93,15 @@ def anketa_start(update, context):
     return STEP_INPUT
 
 
-def find_work(update, context):
-    text = 'Вы можете смотеть вакансии или заполнить анкету, чтобы работодатель мог найти вас.'
-    keyboard = ReplyKeyboardMarkup([
-        ['Заполнить анкету'], ['Смотреть вакансии']
-            ], resize_keyboard=True)
-    update.message.reply_text(text=text, reply_markup=keyboard)
-
-
 def anketa_name(update, context):
-
     user_name = update.message.text
     if len(user_name.split()) < 2:
         update.message.reply_text('Пожалуйста введите корректно имя и фамилию')
         return STEP_NAME
     else:
-        context.user_data['anketa']['name'] = user_name
-        print_anketa_info(update, context)
+        tg_id = update.effective_user.id
+        save_anketa(db, tg_id, 'name', user_name)
+        print_anketa_info(update, context, db)
     return STEP_INPUT
 
 
@@ -120,8 +110,9 @@ def anketa_age(update, context):
     try:
         user_age = int(user_age)
         if user_age > 0 and user_age < 100:
-            context.user_data['anketa']['age'] = user_age
-            print_anketa_info(update, context)
+            tg_id = update.effective_user.id
+            save_anketa(db, tg_id, 'age', user_age)
+            print_anketa_info(update, context, db)
             return STEP_INPUT
         else:
             update.message.reply_text('Пожалуйста введите корректный возраст')
@@ -136,8 +127,9 @@ def anketa_expirience(update, context):
     try:
         user_expirience = int(user_expirience)
         if user_expirience > 0 and user_expirience < 100:
-            context.user_data['anketa']['expirience'] = user_expirience
-            print_anketa_info(update, context)
+            tg_id = update.effective_user.id
+            save_anketa(db, tg_id, 'expirience', user_expirience)
+            print_anketa_info(update, context, db)
             return STEP_INPUT
         else:
             update.message.reply_text('Пожалуйста введите корректное число')
@@ -149,15 +141,17 @@ def anketa_expirience(update, context):
 
 def anketa_komment(update, context):
     user_komment = update.message.text
-    context.user_data['anketa']['komment'] = user_komment
-    print_anketa_info(update, context)
+    tg_id = update.effective_user.id
+    save_anketa(db, tg_id, 'komment', user_komment)
+    print_anketa_info(update, context, db)
     return STEP_INPUT
 
 
 def anketa_location(update, context):
     user_location = update.message.text
-    context.user_data['anketa']['location'] = user_location
-    print_anketa_info(update, context)
+    tg_id = update.effective_user.id
+    save_anketa(db, tg_id, 'location', user_location)
+    print_anketa_info(update, context, db)
     return STEP_INPUT
 
 
@@ -166,22 +160,6 @@ def anketa_fallback(update, context):
 
 
 def end_describing(update, context):
-    # tg_id = update['callback_query']['message']['chat']['id']
-    # name = context.user_data['anketa']['name']
-    # age = context.user_data['anketa']['age']
-    # expirience = context.user_data['anketa']['expirience']
-    # komment = context.user_data['anketa']['komment']
-    # location = context.user_data['anketa']['location']
-    # print(tg_id, name, age, expirience, komment, location)
-    # user = Applicant(
-    #     tg_id=1111,
-    #     name=context.user_data['anketa']['name'], 
-    #     age=context.user_data['anketa']['age'], 
-    #     expirience=context.user_data['anketa']['expirience'],
-    #     komment=context.user_data['anketa']['komment'],
-    #     location=context.user_data['anketa']['location'])
-    # db_session.add(user)
-    # db_session.commit()
     text = 'Вы завершили заполнение анкеты'
     update.callback_query.answer()
     update.callback_query.edit_message_text(text=text)

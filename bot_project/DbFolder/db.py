@@ -1,11 +1,29 @@
+from pymongo import MongoClient
+import settings
+from datetime import datetime
 
-from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, scoped_session
-#url = 'sqlite:///server.db'
-url = 'postgresql://uuucnrgc:I-H2O5tFjxjOciBWvojaJNBmpkd7-H1r@hattie.db.elephantsql.com:5432/uuucnrgc'
-engine = create_engine(url)
+client = MongoClient(settings.MONGO_LINK)
+db = client[settings.MONGO_DB]
 
-db_session = scoped_session(sessionmaker(bind=engine))
-Base = declarative_base()
-Base.query = db_session.query_property()
+
+def get_or_create_user(db, effective_user, chat_id):
+    user = db.users.find_one({'tg_id': effective_user.id})
+    if not user:
+        user = {
+            'tg_id': effective_user.id,
+            'first_name': effective_user.first_name,
+            'last_name': effective_user.last_name,
+            'username': effective_user.username,
+            'chat_id': chat_id,
+            'anketa': {}
+        }
+        db.users.insert_one(user)
+    return user
+
+
+def save_anketa(db, user_id, anketa_key, anketa_value):
+    user = db.users.find_one({'tg_id': user_id})
+    db.users.update_one(
+        {'_id': user['_id']},
+        {'$set': {f'anketa.{anketa_key}': anketa_value}}
+    )

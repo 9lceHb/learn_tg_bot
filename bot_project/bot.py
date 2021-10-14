@@ -23,7 +23,12 @@ from anketa import (
     anketa_location,
     anketa_fallback,
     end_describing,
-    find_work
+    ask_for_input
+)
+
+from handlers import (
+    find_work,
+    start
 )
 
 from anketa import (
@@ -51,31 +56,6 @@ logging.basicConfig(format='%(name)s - %(levelname)s - %(message)s',
 # }
 
 logger = logging.getLogger(__name__)
-
-
-def start_keyboard():
-    return ReplyKeyboardMarkup([
-        ['Найти работу'], ['Найти сотрудника']
-            ], resize_keyboard=True)
-
-
-def start(update: Update, context: CallbackContext) -> int:
-    reply_markup = start_keyboard()
-    update.message.reply_text(
-        "Привет, я бот, который поможет тебе найти работу или сотрудника, моя"
-        " область - медицина. Пожалуйста укажите, для чего вы используете бота?",
-        reply_markup=reply_markup)
-
-
-def ask_for_input(update: Update, context: CallbackContext) -> str:
-    """Prompt user to input data for selected feature."""
-    print('step_input')
-    context.user_data['CURRENT_FEATURE'] = update.callback_query.data
-    user_data_key = context.user_data['CURRENT_FEATURE']
-    text = f'Пожалуйста введите значение для поля-{step_dict[user_data_key]}:'
-    update.callback_query.answer()
-    update.callback_query.edit_message_text(text=text)
-    return user_data_key
 
 
 def main() -> None:
