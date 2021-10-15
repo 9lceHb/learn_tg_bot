@@ -11,6 +11,8 @@ python-telegram-bot = "^13.7"
 psycopg2-binary = "^2.9.1"
 SQLAlchemy = "^1.4.25"
 pymongo = {extras = ["srv"], version = "^3.12.0"}
+clarifai-grpc = "^7.9.0"
+imageio = "^2.9.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"

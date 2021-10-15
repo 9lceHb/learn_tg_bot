@@ -1,0 +1,2 @@
+
+GRPC_DEFAULT_SSL_ROOTS_FILE_PATH=/'PATH_TO'/roots.pem 

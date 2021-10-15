@@ -23,7 +23,8 @@ from anketa import (
     anketa_location,
     anketa_fallback,
     end_describing,
-    ask_for_input
+    ask_for_input,
+    check_user_photo
 )
 
 from handlers import (
@@ -39,7 +40,7 @@ from anketa import (
     STEP_LOCATION,
     STEP_INPUT,
     END,
-    step_dict
+    STEP_PHOTO
 )
 
 logging.basicConfig(format='%(name)s - %(levelname)s - %(message)s',
@@ -79,7 +80,8 @@ def main() -> None:
             STEP_AGE: [MessageHandler(Filters.text, anketa_age)],
             STEP_EXPIRIENCE: [MessageHandler(Filters.text, anketa_expirience)],
             STEP_KOMMENT: [MessageHandler(Filters.text, anketa_komment)],
-            STEP_LOCATION: [MessageHandler(Filters.text, anketa_location)]
+            STEP_LOCATION: [MessageHandler(Filters.text, anketa_location)],
+            STEP_PHOTO: [MessageHandler(Filters.photo, check_user_photo)]
             },
         fallbacks=[
             MessageHandler(
