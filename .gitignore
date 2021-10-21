@@ -134,9 +134,9 @@ env/
 __pycache__/
 .venv
 
-.vscode
+.vscode/
 
-#iamges
-downloads
-images
+#images
+downloads/
+images/
 
