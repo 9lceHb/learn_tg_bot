@@ -11,18 +11,22 @@ def start_keyboard():
             ], resize_keyboard=True)
 
 
+# Обработка стартового хендлера (приветствие)
 def start(update, context):
-    user = get_or_create_user(db, update.effective_user, update.message.chat.id)
+    get_or_create_user(db, update.effective_user, update.message.chat.id)
     reply_markup = start_keyboard()
     update.message.reply_text(
-        "Привет, я бот, который поможет тебе найти работу или сотрудника, моя"
-        " область - медицина. Пожалуйста укажите, для чего вы используете бота?",
+        ("Привет, я бот, который поможет тебе найти работу или сотрудника, моя"
+            "область - медицина."
+            "Пожалуйста укажите, для чего вы используете бота?"),
         reply_markup=reply_markup)
 
 
+# Обработка кнопи - найти работу
 def find_work(update, context):
-    user = get_or_create_user(db, update.effective_user, update.message.chat.id)
-    text = 'Вы можете смотеть вакансии или заполнить анкету, чтобы работодатель мог найти вас.'
+    get_or_create_user(db, update.effective_user, update.message.chat.id)
+    text = ("Вы можете смотеть вакансии или заполнить анкету,"
+            " чтобы работодатель мог найти вас.")
     keyboard = ReplyKeyboardMarkup([
         ['Заполнить анкету'], ['Смотреть вакансии']
             ], resize_keyboard=True)

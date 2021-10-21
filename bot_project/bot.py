@@ -3,7 +3,6 @@ import logging
 # from datetime import datetime
 import settings
 
-from telegram import ReplyKeyboardMarkup, Update
 from telegram.ext import (
     Updater,
     CommandHandler,
@@ -11,7 +10,6 @@ from telegram.ext import (
     Filters,
     ConversationHandler,
     CallbackQueryHandler,
-    CallbackContext
 )
 
 from anketa import (
@@ -61,9 +59,8 @@ logger = logging.getLogger(__name__)
 
 def main() -> None:
     mybot = Updater(settings.API_KEY, use_context=True)  # request_kwargs=PROXY
-
     dp = mybot.dispatcher
-
+    #Диалог для заполнения анкеты, каждый этап возвращается к STEP_INPUT
     anketa_handler = ConversationHandler(
         entry_points=[
             MessageHandler(

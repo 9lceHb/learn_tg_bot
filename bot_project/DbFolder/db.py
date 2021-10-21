@@ -1,11 +1,11 @@
 from pymongo import MongoClient
 import settings
-from datetime import datetime
 
 client = MongoClient(settings.MONGO_LINK)
 db = client[settings.MONGO_DB]
 
 
+# Создание пользователя в базе users, подтягивание информации из TG.
 def get_or_create_user(db, effective_user, chat_id):
     user = db.users.find_one({'tg_id': effective_user.id})
     if not user:
@@ -21,6 +21,7 @@ def get_or_create_user(db, effective_user, chat_id):
     return user
 
 
+# Добавление или обновление в базе информации из анкеты
 def save_anketa(db, user_id, anketa_key, anketa_value):
     user = db.users.find_one({'tg_id': user_id})
     db.users.update_one(
