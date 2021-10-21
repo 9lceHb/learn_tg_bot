@@ -123,4 +123,8 @@ dmypy.json
 .pyre/
 
 # VSCODE
-.vscode/
+.vscode
+
+#iamges
+downloads
+iamges
