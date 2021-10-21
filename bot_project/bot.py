@@ -27,6 +27,7 @@ from anketa import (
 
 from handlers import (
     find_work,
+    message_if_wrong,
     start
 )
 
@@ -60,7 +61,7 @@ logger = logging.getLogger(__name__)
 def main() -> None:
     mybot = Updater(settings.API_KEY, use_context=True)  # request_kwargs=PROXY
     dp = mybot.dispatcher
-    #Диалог для заполнения анкеты, каждый этап возвращается к STEP_INPUT
+    # Диалог для заполнения анкеты, каждый этап возвращается к STEP_INPUT
     anketa_handler = ConversationHandler(
         entry_points=[
             MessageHandler(
@@ -95,6 +96,10 @@ def main() -> None:
         find_work)
         )
     dp.add_handler(anketa_handler)
+    dp.add_handler(MessageHandler(
+        Filters.text | Filters.photo,
+        message_if_wrong)
+        )
     mybot.start_polling()
     mybot.idle()
 

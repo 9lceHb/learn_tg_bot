@@ -109,5 +109,5 @@ def update_user_location(user_location):
 
 
 if __name__ == '__main__':
-    #make_location_file()
+    # make_location_file()
     print(is_human_and_sfw('downloads/pi.jpg'))

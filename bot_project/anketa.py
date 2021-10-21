@@ -4,7 +4,6 @@ from telegram import (
     InlineKeyboardMarkup,
 )
 import os
-import glob
 from telegram.ext import ConversationHandler
 from bot_project.utils import is_human_and_sfw, update_user_location
 from DbFolder.db import db, save_anketa
@@ -68,24 +67,24 @@ def print_anketa_info(update, context, db):
     update.message.reply_text(
         f'''
         Ваши данные:
-        Имя: ({user['anketa']['name']
+        Имя: {user['anketa']['name']
                 if user['anketa'].get('name')
-                else 'Значение не установлено'})
-        Возраст: ({user['anketa']['age']
+                else 'Значение не установлено'}
+        Возраст: {user['anketa']['age']
                 if user['anketa'].get('age')
-                else 'Значение не установлено'})
-        Опыт: ({user['anketa']['expirience']
+                else 'Значение не установлено'}
+        Опыт: {user['anketa']['expirience']
                 if user['anketa'].get('expirience')
-                else 'Значение не установлено'})
-        Комментарий: ({user['anketa']['komment']
+                else 'Значение не установлено'}
+        Комментарий: {user['anketa']['komment']
                 if user['anketa'].get('komment')
-                else 'Значение не установлено'})
-        Место жительства: ({user['anketa']['location']
+                else 'Значение не установлено'}
+        Место жительства: {user['anketa']['location']
                 if user['anketa'].get('location')
-                else 'Значение не установлено'})
-        Фото: ({'Фото добавлено'
+                else 'Значение не установлено'}
+        Фото: {'Фото добавлено'
                 if user['anketa'].get('photo')
-                else 'Значение не установлено'})
+                else 'Значение не установлено'}
         ''', reply_markup=anketa_keyboard()
         )
 
@@ -172,7 +171,7 @@ def anketa_komment(update, context):
 def anketa_location(update, context):
     update.message.reply_text('''
     Введите через запятую название метро или округа или района или линии метро
-    Пример: Калининская линия, Первомайская
+    Пример: Калининская линия, Первомайская, ЦАО
     ''')
     user_location = update.message.text
     if update_user_location(user_location):
@@ -203,7 +202,6 @@ def check_user_photo(update, context):
     file_name_max = os.path.join('downloads', f'{user_photo.file_id}.jpg')
     file_name_mid = os.path.join('downloads', f'{user_photo_1.file_id}.jpg')
     file_name_min = os.path.join('downloads', f'{user_photo_0.file_id}.jpg')
-    print(file_name_max)
     user_photo.download(file_name_max)
     user_photo_1.download(file_name_mid)
     user_photo_0.download(file_name_min)
@@ -217,14 +215,18 @@ def check_user_photo(update, context):
     #     save_anketa(db, tg_id, 'photo', new_file_name)
     #     print_anketa_info(update, context, db)
     # else:
+    #     update.message.reply_text('Фото не подхоидт, выберите другое')
+    #     return STEP_PHOTO
 
     update.message.reply_text('Фото сохранено')
+    files = os.listdir(path=f'images/{tg_id}')
+    for file in files:
+        os.remove(f'images/{tg_id}/{file}')
     os.makedirs(f'images/{tg_id}', exist_ok=True)
     new_file_name_max = os.path.join(
         'images', f'{tg_id}',
         f'max_{tg_id}_{user_photo.file_id}.jpg'
         )
-    print(new_file_name_max)
     new_file_name_mid = os.path.join(
         'images', f'{tg_id}',
         f'mid_{tg_id}_{user_photo_1.file_id}.jpg'
@@ -236,7 +238,14 @@ def check_user_photo(update, context):
     os.rename(file_name_max, new_file_name_max)
     os.rename(file_name_mid, new_file_name_mid)
     os.rename(file_name_min, new_file_name_min)
-    save_anketa(db, tg_id, 'photo', [new_file_name_max, new_file_name_mid, new_file_name_min])
+    files = os.listdir(path='downloads')
+    for file in files:
+        os.remove(f'downloads/{file}')
+    save_anketa(db, tg_id, 'photo', [
+        new_file_name_max,
+        new_file_name_mid,
+        new_file_name_min
+        ])
     print_anketa_info(update, context, db)
 
     return STEP_INPUT

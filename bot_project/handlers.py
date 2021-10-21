@@ -20,6 +20,7 @@ def start(update, context):
             "область - медицина."
             "Пожалуйста укажите, для чего вы используете бота?"),
         reply_markup=reply_markup)
+    # update.effective_message.reply_html('Use bad_command to cause an error.')
 
 
 # Обработка кнопи - найти работу
@@ -31,3 +32,7 @@ def find_work(update, context):
         ['Заполнить анкету'], ['Смотреть вакансии']
             ], resize_keyboard=True)
     update.message.reply_text(text=text, reply_markup=keyboard)
+
+
+def message_if_wrong(update, context):
+    update.message.reply_text('Занятно:), но лучше воспользоваться кнопокой!')
