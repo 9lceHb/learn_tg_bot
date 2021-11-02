@@ -1,5 +1,5 @@
 from pymongo import MongoClient
-import settings
+from bot_project import settings
 
 client = MongoClient(settings.MONGO_LINK)
 db = client[settings.MONGO_DB]

@@ -22,22 +22,13 @@ def is_human_and_sfw(file_name):
         f'Key {bot_project.settings.CLARIFAI_API_KEY}'),)
     request_safe = service_pb2.PostModelOutputsRequest(
         model_id=model_safe,
-        inputs=[
-            resources_pb2.Input(data=resources_pb2.Data(
-                image=resources_pb2.Image(base64=file_bytes)
-                ))
-        ])
+        inputs=[resources_pb2.Input(data=resources_pb2.Data(image=resources_pb2.Image(base64=file_bytes)))])
     request_people = service_pb2.PostModelOutputsRequest(
         model_id=model_object,
-        inputs=[
-            resources_pb2.Input(data=resources_pb2.Data(
-                image=resources_pb2.Image(base64=file_bytes)
-                ))
-        ])
+        inputs=[resources_pb2.Input(data=resources_pb2.Data(image=resources_pb2.Image(base64=file_bytes)))])
     response_safe = stub.PostModelOutputs(request_safe, metadata=metadata)
     response_people = stub.PostModelOutputs(request_people, metadata=metadata)
-    if (response_safe.outputs[0].status.code == 10000
-            and response_people.outputs[0].status.code == 10000):
+    if (response_safe.outputs[0].status.code == 10000 and response_people.outputs[0].status.code == 10000):
 
         for concept in response_people.outputs[0].data.concepts:
             if concept.name == "people" and concept.value >= 0.7:
@@ -108,6 +99,27 @@ def update_user_location(user_location):
     return user_location
 
 
+def make_station_numbers_set(user_location):
+    numbers = []
+    with open('locations.json', encoding='utf-8') as f:
+        response = json.load(f)
+    for subject in user_location.keys():
+        for location in user_location[subject]:
+            print(location, subject)
+            station_numbers = take_numbers(location, subject, response)
+            numbers += station_numbers
+    numbers = set(numbers)
+    numbers = list(numbers)
+    return numbers
+
+
+def take_numbers(location, subject, response):
+    station_numbers = []
+    for station in response:
+        if station['Cells'][subject] == location:
+            station_numbers.append(station['global_id'])
+    return station_numbers
+
 if __name__ == '__main__':
     # make_location_file()
-    print(is_human_and_sfw('downloads/pi.jpg'))
+    print(is_human_and_sfw('images/125929447/123.jpg'))
