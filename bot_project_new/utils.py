@@ -1,47 +1,70 @@
-import bot_project.settings
+from bot_project_new import settings
+import clarifai_grpc.channel
 from clarifai_grpc.channel.clarifai_channel import ClarifaiChannel
 from clarifai_grpc.grpc.api import service_pb2_grpc
 from clarifai_grpc.grpc.api import service_pb2, resources_pb2
 import requests
 import json
+import os
+from DbFolder.db_file import DBase
 
 # clarifai модель определяет объект на фото
 model_object = 'aaa03c23b3724a16a56b629203edc62c'
 # clarifai модель определяет контент для взрослых
 model_safe = 'e9576d86d2004ed1a38ba0cf39ecb4b1'
 
+dbase = DBase()
+
+def make_photo_path(id_photo, photo, path, update, context):
+    tg_id = update.effective_user.id
+    user_photo = context.bot.getFile(photo.file_id)
+    if path == 'downloads':
+        os.makedirs('downloads', exist_ok=True)
+        file_path = os.path.join('downloads', f'{id_photo}_{photo.file_id}.jpg')
+        user_photo.download(file_path)
+        return file_path
+    elif path == 'images':
+        os.makedirs(f'images/{tg_id}', exist_ok=True)
+        new_file_path = os.path.join('images', f'{tg_id}', f'{tg_id}_{id_photo}_{user_photo.file_id}.jpg')
+        return new_file_path
+
 
 # Функция проверяет что на картинке человек и нет контента для взрослых
 def is_human_and_sfw(file_name):
-    with open(file_name, "rb") as f:
-        file_bytes = f.read()
-    stub = service_pb2_grpc.V2Stub(ClarifaiChannel.get_grpc_channel())
-    # This is how you authenticate.
-    metadata = ((
-        'authorization',
-        f'Key {bot_project.settings.CLARIFAI_API_KEY}'),)
-    request_safe = service_pb2.PostModelOutputsRequest(
-        model_id=model_safe,
-        inputs=[resources_pb2.Input(data=resources_pb2.Data(image=resources_pb2.Image(base64=file_bytes)))])
-    request_people = service_pb2.PostModelOutputsRequest(
-        model_id=model_object,
-        inputs=[resources_pb2.Input(data=resources_pb2.Data(image=resources_pb2.Image(base64=file_bytes)))])
-    response_safe = stub.PostModelOutputs(request_safe, metadata=metadata)
-    response_people = stub.PostModelOutputs(request_people, metadata=metadata)
-    if (response_safe.outputs[0].status.code == 10000 and response_people.outputs[0].status.code == 10000):
-
-        for concept in response_people.outputs[0].data.concepts:
-            if concept.name == "people" and concept.value >= 0.7:
-                for concept in response_safe.outputs[0].data.concepts:
-                    if concept.name == "sfw" and concept.value >= 0.7:
-                        return True
-    return False
+    try:
+        with open(file_name, "rb") as f:
+            file_bytes = f.read()
+        stub = service_pb2_grpc.V2Stub(ClarifaiChannel.get_json_channel())
+        # This is how you authenticate.
+        metadata = ((
+            'authorization',
+            f'Key {settings.CLARIFAI_API_KEY}'),)
+        request_safe = service_pb2.PostModelOutputsRequest(
+            model_id=model_safe,
+            inputs=[resources_pb2.Input(data=resources_pb2.Data(image=resources_pb2.Image(base64=file_bytes)))])
+        request_people = service_pb2.PostModelOutputsRequest(
+            model_id=model_object,
+            inputs=[resources_pb2.Input(data=resources_pb2.Data(image=resources_pb2.Image(base64=file_bytes)))])
+        response_safe = stub.PostModelOutputs(request_safe, metadata=metadata)
+        response_people = stub.PostModelOutputs(request_people, metadata=metadata)
+        if (response_safe.outputs[0].status.code == 10000 and response_people.outputs[0].status.code == 10000):
+            for concept in response_people.outputs[0].data.concepts:
+                if (concept.name == "man" and concept.value >= 0.7) or (concept.name == "woman" and concept.value >= 0.7):
+                    for concept in response_safe.outputs[0].data.concepts:
+                        if concept.name == "sfw" and concept.value >= 0.7:
+                            return True
+        return False
+    except (ValueError,
+            requests.RequestException,
+            clarifai_grpc.channel.errors.ApiError):
+        print('except')
+        return True
 
 
 # Скачиваем базу округов, районов и метро, добавляем сокращенные наименования
 def make_location_file():
     url = 'https://apidata.mos.ru/v1/datasets/1488/rows'
-    params = {'api_key': bot_project.settings.MOS_API}
+    params = {'api_key': settings.MOS_API}
     response = requests.get(url, params=params).json()
     for i, cell in enumerate(response):
         word_list = cell['Cells']['AdmArea'].replace('-', ' ').split(' ')
@@ -119,6 +142,42 @@ def take_numbers(location, subject, response):
             station_numbers.append(station['global_id'])
     return station_numbers
 
+
+def send_user_photo(update, context, user_photo):
+    chat_id = update.effective_chat.id
+    context.bot.send_photo(chat_id=chat_id, photo=open(user_photo, 'rb'))
+
+def send_user_info(user):
+    text = f'''
+    Имя: {user['anketa']['name']}
+    Возраст: {user['anketa']['age']}
+    Опыт: {user['anketa']['expirience']}
+    Комментарий: {user['anketa']['komment']}
+    Место жительства: {user['anketa']['location']['Station']}
+    '''
+    return text
+
+
+def print_location(user):
+    text = f'''
+    Округ: {', '.join(user['anketa']['location']['AdmArea']) if user['anketa']['location'].get('AdmArea') else None}
+    Район: {', '.join(user['anketa']['location']['District']) if user['anketa']['location'].get('District') else None}
+    Станция метро: {', '.join(user['anketa']['location'].get('Station'))}
+    Линия метро {', '.join(user['anketa']['location'].get('Line'))}
+    '''
+    return text
+
+def firsttime_user(tg_id):
+    user = dbase.db_client.users.find_one({'tg_id': tg_id})
+    if user['first_time']:
+        return True
+    else:
+        return False
+
 if __name__ == '__main__':
     # make_location_file()
-    print(is_human_and_sfw('images/125929447/123.jpg'))
+    files = os.listdir(path='images/125929447')
+    for file in files:
+        if '_0_' in file:
+            file_name = file
+    print(is_human_and_sfw(f'images/125929447/{file_name}'))

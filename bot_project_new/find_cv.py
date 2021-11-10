@@ -4,7 +4,14 @@ from telegram import (
     InlineKeyboardMarkup,
 )
 import os
-from bot_project.utils import is_human_and_sfw, update_user_location, make_station_numbers_set
+from bot_project_new.utils import (
+    is_human_and_sfw,
+    update_user_location,
+    make_station_numbers_set,
+    send_user_photo,
+    send_user_info,
+)
+
 from DbFolder.db_file import DBase
 from telegram.ext import (
     Updater,
@@ -98,10 +105,10 @@ def use_filters_on_db(update, context):
     users_count = dbase.db_client.users.count_documents({'$and': filters})
     if filters:
         users_count = dbase.db_client.users.count_documents({'$and': filters})
-        users = users_count = dbase.db_client.users.find({'$and': filters})
+        users = dbase.db_client.users.find({'$and': filters})
     else:
         users_count = dbase.db_client.users.count_documents({})
-        users = users_count = dbase.db_client.users.find({})
+        users = dbase.db_client.users.find({})
     return users_count, users
 
 
@@ -131,18 +138,13 @@ def print_filters_info(update, context):
     )
 
 def filter_cv_start(update, context):
-    update.message.reply_text(
-        'Поиск резюме',
-        reply_markup=ReplyKeyboardRemove()
-    )
-    update.message.reply_text(
-        "Выберите фильтры поиска",
-        reply_markup=filter_cv_keyboard())
+    update.callback_query.answer()
+    text = 'Поиск резюме, выберите фильтры поиска'
+    update.callback_query.edit_message_text(text=text, reply_markup=filter_cv_keyboard())
     return STEP_FILTER_INPUT
 
 
 def filter_ask_for_input(update, context):
-    print('-')
     """Prompt user to input data for selected feature."""
     update.callback_query.answer()
     context.user_data['CURRENT_FEATURE_CV'] = update.callback_query.data
@@ -245,10 +247,21 @@ def filter_photo(update, context):
         return STEP_FILTER_PHOTO
 
 def show_users(update, context):
+    update.callback_query.answer()
     print('+')
-    use_filters_on_db(update, context)[0]
-    text = 'Вы завершили заполнение фильтров, для продолжения работы нажмите /start'
-    update.message.reply_text(text=text)
+    count = use_filters_on_db(update, context)[0]
+    users = use_filters_on_db(update, context)[1]
+    users_list = []
+    for user in users:
+        users_list.append(user)
+    user_photos = users_list[0]['anketa']['photo']
+    for photo in user_photos:
+        if 'mid' in photo:
+            user_photo = photo
+    text = send_user_info(users_list[0])
+    send_user_photo(update, context, user_photo)
+    update.callback_query.edit_message_text(text=text)
+    return STEP_FILTER_INPUT
 
 
 def filter_fallback(update, context):
@@ -260,20 +273,23 @@ def end_filter(update, context):
     update.callback_query.edit_message_text(text=text, reply_markup=None)
     return ConversationHandler.END
 
+
+pattern = (f'^{STEP_FILTER_AGE}$|^{STEP_FILTER_EXPIRIENCE}$|^{STEP_FILTER_KOMMENT}$|^{STEP_FILTER_LOCATION}$|^{STEP_FILTER_PHOTO}$')
+
 filter_cv_handler = ConversationHandler(
     entry_points=[
-        MessageHandler(Filters.regex('^(Смотреть резюме)$'), filter_cv_start)
+        CallbackQueryHandler(filter_cv_start, pattern='^' + 'Найти сотрудника' + '$')
     ],
     states={
-        STEP_FILTER_INPUT: [CallbackQueryHandler(
-            filter_ask_for_input, pattern='^(?!' + str(END) + ').*$'  # and '^(?!' + str(STEP_SHOW_USERS) + ').*$')
-        )],
+        STEP_FILTER_INPUT: [
+            CallbackQueryHandler(filter_ask_for_input, pattern=pattern),
+            CallbackQueryHandler(show_users, pattern='^' + str(STEP_SHOW_USERS) + '$')
+        ],
         STEP_FILTER_AGE: [MessageHandler(Filters.text, filter_age)],
         STEP_FILTER_EXPIRIENCE: [MessageHandler(Filters.text, filter_expirience)],
         STEP_FILTER_KOMMENT: [MessageHandler(Filters.text, filter_komment)],
         STEP_FILTER_LOCATION: [MessageHandler(Filters.text, filter_location)],
         STEP_FILTER_PHOTO: [MessageHandler(Filters.text, filter_photo)],
-        STEP_SHOW_USERS: [MessageHandler(Filters.text, show_users)],
     },
     fallbacks=[
         MessageHandler(Filters.text | Filters.photo | Filters.video, filter_fallback),
