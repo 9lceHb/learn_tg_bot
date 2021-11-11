@@ -49,7 +49,8 @@ def is_human_and_sfw(file_name):
         response_people = stub.PostModelOutputs(request_people, metadata=metadata)
         if (response_safe.outputs[0].status.code == 10000 and response_people.outputs[0].status.code == 10000):
             for concept in response_people.outputs[0].data.concepts:
-                if (concept.name == "man" and concept.value >= 0.7) or (concept.name == "woman" and concept.value >= 0.7):
+                if (concept.name == "man" and concept.value >= 0.7) or \
+                        (concept.name == "woman" and concept.value >= 0.7):
                     for concept in response_safe.outputs[0].data.concepts:
                         if concept.name == "sfw" and concept.value >= 0.7:
                             return True

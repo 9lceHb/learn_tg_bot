@@ -274,7 +274,13 @@ def end_filter(update, context):
     return ConversationHandler.END
 
 
-pattern = (f'^{STEP_FILTER_AGE}$|^{STEP_FILTER_EXPIRIENCE}$|^{STEP_FILTER_KOMMENT}$|^{STEP_FILTER_LOCATION}$|^{STEP_FILTER_PHOTO}$')
+pattern = (
+    f'^{STEP_FILTER_AGE}$|'
+    '^{STEP_FILTER_EXPIRIENCE}$|'
+    '^{STEP_FILTER_KOMMENT}$|'
+    '^{STEP_FILTER_LOCATION}$|'
+    '^{STEP_FILTER_PHOTO}$'
+)
 
 filter_cv_handler = ConversationHandler(
     entry_points=[

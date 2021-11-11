@@ -20,7 +20,7 @@ class DBase:
                 'first_name': effective_user.first_name,
                 'last_name': effective_user.last_name,
                 'username': effective_user.username,
-                'anketa': {'show_cv': True},
+                'anketa': {'show_cv': True, 'specialisation': []},
                 'filters': {}
             }
             self.db_client.users.insert_one(user)
@@ -48,4 +48,21 @@ class DBase:
         self.db_client.users.update_one(
             {'_id': user['_id']},
             {'$set': {f'filters.{filter_key}': filter_value}}
+        )
+
+    def update_specialisation(self, user_id, anketa_value):
+        """
+        Добавление или обновление в базе информации из анкеты
+        """
+        user = self.db_client.users.find_one({'tg_id': user_id})
+        user_specialisations = set(user['anketa']['specialisation'])
+        user_specialisations = list(user_specialisations)
+        if anketa_value in user_specialisations:
+            user_specialisations.remove(anketa_value)
+        else:
+            user_specialisations.append(anketa_value)
+        # TODO: нужно добавить проверку на None у user
+        self.db_client.users.update_one(
+            {'_id': user['_id']},
+            {'$set': {'anketa.specialisation': user_specialisations}}
         )
