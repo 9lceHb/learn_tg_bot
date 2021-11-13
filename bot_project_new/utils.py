@@ -150,22 +150,34 @@ def send_user_photo(update, context, user_photo):
 
 def send_user_info(user):
     text = f'''
-    Имя: {user['anketa']['name']}
-    Возраст: {user['anketa']['age']}
-    Опыт: {user['anketa']['expirience']}
-    Комментарий: {user['anketa']['komment']}
-    Место жительства: {user['anketa']['location']['Station']}
+    Имя: {user['cv']['name']}
+    Возраст: {user['cv']['age']}
+    Опыт: {user['cv']['expirience']}
+    Комментарий: {user['cv']['komment']}
+    Место жительства: {user['cv']['location']['Station']}
     '''
     return text
 
 
-def print_location(user):
-    text = f'''
-    Округ: {', '.join(user['anketa']['location']['AdmArea']) if user['anketa']['location'].get('AdmArea') else None}
-    Район: {', '.join(user['anketa']['location']['District']) if user['anketa']['location'].get('District') else None}
-    Станция метро: {', '.join(user['anketa']['location'].get('Station'))}
-    Линия метро {', '.join(user['anketa']['location'].get('Line'))}
-    '''
+def print_location(tg_id):
+    user = dbase.db_client.users.find_one({'tg_id': tg_id})
+    if user['cv']['location'].get('AdmArea'):
+        AdmArea_text = f"    <b>Округ:</b> {', '.join(user['cv']['location']['AdmArea'])}\n"
+    else:
+        AdmArea_text = ''
+    if user['cv']['location'].get('District'):
+        District_text = f"    <b>Район:</b> {', '.join(user['cv']['location']['District'])}\n"
+    else:
+        District_text = ''
+    if user['cv']['location'].get('Station'):
+        Station_text = f"    <b>Станция:</b> {', '.join(user['cv']['location']['Station'])}\n"
+    else:
+        Station_text = ''
+    if user['cv']['location'].get('Line'):
+        Line_text = f"    <b>Линия:</b> {', '.join(user['cv']['location']['Line'])}\n"
+    else:
+        Line_text = ''
+    text = AdmArea_text + District_text + Station_text + Line_text
     return text
 
 def firsttime_user(tg_id):
@@ -174,6 +186,16 @@ def firsttime_user(tg_id):
         return True
     else:
         return False
+
+
+def get_sepcialisation(tg_id):
+    user = dbase.db_client.users.find_one({'tg_id': tg_id})
+    if len(user['cv']['specialisation']) == 0:
+        specialisation = 'Специализация не выбрана'
+    else:
+        specialisation = ', '.join(user['cv']['specialisation'])
+    return specialisation
+
 
 if __name__ == '__main__':
     # make_location_file()

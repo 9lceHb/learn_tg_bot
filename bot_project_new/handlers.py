@@ -2,28 +2,31 @@ from telegram import ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMa
 from bot_project_new.utils import firsttime_user
 from DbFolder.db_file import DBase
 dbase = DBase()
-
+from emoji import emojize
 
 def start_keyboard():
+    smile_work = emojize(':hospital:', use_aliases=True)
+    smile_worker = emojize(':construction_worker:', use_aliases=True)
+    smile_chair = emojize(':seat:', use_aliases=True)
     start_buttons = [
-        [
-            InlineKeyboardButton(text='Найти работу', callback_data='Найти работу'),
-            InlineKeyboardButton(text='Найти сотрудника', callback_data='Найти сотрудника'),
-            InlineKeyboardButton(text='Аренда стоматологического кресла', callback_data='Аренда кресла'),
-        ],
+        [InlineKeyboardButton(text=f'{smile_work} Найти работу', callback_data='Найти работу')],
+        [InlineKeyboardButton(text=f'{smile_worker} Найти сотрудника', callback_data='Найти сотрудника')],
+        [InlineKeyboardButton(text=f'{smile_chair} Аренда стоматологического кресла', callback_data='Аренда кресла')],
     ]
     return InlineKeyboardMarkup(start_buttons)
 
 
 def find_work_keyboard(tg_id):
+    smile_write = emojize(':pencil2:', use_aliases=True)
+    smile_look = emojize(':page_with_curl:', use_aliases=True)
     if firsttime_user(tg_id):
-        text = 'Заполнить анкету'
+        text = f'{smile_write} Заполнить анкету'
     else:
-        text = 'Редактировать анкету'
+        text = f'{smile_write} Редактировать анкету'
     find_work_buttons = [
         [
             InlineKeyboardButton(text=text, callback_data='Заполнить анкету'),
-            InlineKeyboardButton(text='Смотреть вакансии', callback_data='Смотреть вакансии'),
+            InlineKeyboardButton(text=f'{smile_look} Смотреть вакансии', callback_data='Смотреть вакансии'),
         ],
     ]
     return InlineKeyboardMarkup(find_work_buttons)

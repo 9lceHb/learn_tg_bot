@@ -50,7 +50,7 @@ step_dict_cv = {
 dbase = DBase()
 
 def filter_cv_keyboard():
-    anketa_buttons = [
+    cv_buttons = [
         [
             InlineKeyboardButton(text='Задать опыт', callback_data=str(STEP_FILTER_EXPIRIENCE)),
             InlineKeyboardButton(text='Задать возраст', callback_data=str(STEP_FILTER_AGE)),
@@ -67,7 +67,7 @@ def filter_cv_keyboard():
             InlineKeyboardButton(text='Показать резюме)', callback_data=str(STEP_SHOW_USERS)),
         ],
     ]
-    return InlineKeyboardMarkup(anketa_buttons)
+    return InlineKeyboardMarkup(cv_buttons)
 
 
 def use_filters_on_db(update, context):
@@ -76,31 +76,31 @@ def use_filters_on_db(update, context):
     filters = []
     if user['filters'].get('photo'):
         is_photo = True
-        filters.append({'anketa.photo': {'$exists': True}})
+        filters.append({'cv.photo': {'$exists': True}})
     else:
         is_photo = False
 
     if user['filters'].get('komment'):
         is_komment = True
-        filters.append({'anketa.komment': {'$exists': True}})
+        filters.append({'cv.komment': {'$exists': True}})
     else:
         is_komment = False
 
     if user['filters'].get('age'):
         age_from = user['filters']['age'][0]
         age_to = user['filters']['age'][1]
-        filters.append({'anketa.age': {'$gt': age_from}})
-        filters.append({'anketa.age': {'$lt': age_to}})
+        filters.append({'cv.age': {'$gt': age_from}})
+        filters.append({'cv.age': {'$lt': age_to}})
 
     if user['filters'].get('expirience'):
         expirience_from = user['filters']['expirience'][0]
         expirience_to = user['filters']['expirience'][1]
-        filters.append({'anketa.expirience': {'$gt': expirience_from}})
-        filters.append({'anketa.expirience': {'$lt': expirience_to}})
+        filters.append({'cv.expirience': {'$gt': expirience_from}})
+        filters.append({'cv.expirience': {'$lt': expirience_to}})
 
     if user['filters'].get('location'):
         filter_station_numbers = user['filters']['station_numbers']
-        filters.append({'anketa.station_numbers': {'$in': filter_station_numbers}})
+        filters.append({'cv.station_numbers': {'$in': filter_station_numbers}})
 
     users_count = dbase.db_client.users.count_documents({'$and': filters})
     if filters:
@@ -254,7 +254,7 @@ def show_users(update, context):
     users_list = []
     for user in users:
         users_list.append(user)
-    user_photos = users_list[0]['anketa']['photo']
+    user_photos = users_list[0]['cv']['photo']
     for photo in user_photos:
         if 'mid' in photo:
             user_photo = photo
