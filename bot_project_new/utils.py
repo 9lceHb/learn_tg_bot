@@ -144,57 +144,94 @@ def take_numbers(location, subject, response):
     return station_numbers
 
 
-def send_user_photo(update, context, user_photo):
-    chat_id = update.effective_chat.id
-    context.bot.send_photo(chat_id=chat_id, photo=open(user_photo, 'rb'))
-
-def send_user_info(user):
-    text = f'''
-    Имя: {user['cv']['name']}
-    Возраст: {user['cv']['age']}
-    Опыт: {user['cv']['expirience']}
-    Комментарий: {user['cv']['komment']}
-    Место жительства: {user['cv']['location']['Station']}
-    '''
-    return text
-
-
-def print_location(tg_id):
+def print_location(tg_id, cv_or_filter):
     user = dbase.db_client.users.find_one({'tg_id': tg_id})
-    if user['cv']['location'].get('AdmArea'):
-        AdmArea_text = f"    <b>Округ:</b> {', '.join(user['cv']['location']['AdmArea'])}\n"
+    if user[cv_or_filter]['location'].get('AdmArea'):
+        AdmArea_text = f"    <b>Округ:</b> {', '.join(user[cv_or_filter]['location']['AdmArea'])}\n"
     else:
         AdmArea_text = ''
-    if user['cv']['location'].get('District'):
-        District_text = f"    <b>Район:</b> {', '.join(user['cv']['location']['District'])}\n"
+    if user[cv_or_filter]['location'].get('District'):
+        District_text = f"    <b>Район:</b> {', '.join(user[cv_or_filter]['location']['District'])}\n"
     else:
         District_text = ''
-    if user['cv']['location'].get('Station'):
-        Station_text = f"    <b>Станция:</b> {', '.join(user['cv']['location']['Station'])}\n"
+    if user[cv_or_filter]['location'].get('Station'):
+        Station_text = f"    <b>Станция:</b> {', '.join(user[cv_or_filter]['location']['Station'])}\n"
     else:
         Station_text = ''
-    if user['cv']['location'].get('Line'):
-        Line_text = f"    <b>Линия:</b> {', '.join(user['cv']['location']['Line'])}\n"
+    if user[cv_or_filter]['location'].get('Line'):
+        Line_text = f"    <b>Линия:</b> {', '.join(user[cv_or_filter]['location']['Line'])}\n"
     else:
         Line_text = ''
     text = AdmArea_text + District_text + Station_text + Line_text
     return text
 
-def firsttime_user(tg_id):
+def firsttime_user(tg_id, cv_or_filter):
     user = dbase.db_client.users.find_one({'tg_id': tg_id})
-    if user['first_time']:
+    if user[cv_or_filter]['first_time']:
         return True
     else:
         return False
 
 
-def get_sepcialisation(tg_id):
+def print_specialisation(tg_id, cv_or_filter):
     user = dbase.db_client.users.find_one({'tg_id': tg_id})
-    if len(user['cv']['specialisation']) == 0:
+    if len(user[cv_or_filter]['specialisation']) == 0:
         specialisation = 'Специализация не выбрана'
     else:
-        specialisation = ', '.join(user['cv']['specialisation'])
+        specialisation = ', '.join(user[cv_or_filter]['specialisation'])
     return specialisation
+
+def print_filter_age(tg_id):
+    user = dbase.db_client.users.find_one({'tg_id': tg_id})
+    text = f"от {user['filter']['age'][0]} до {user['filter']['age'][1]}"
+    return text
+
+
+def print_cv(tg_id):
+    user = dbase.db_client.users.find_one({'tg_id': tg_id})
+    if user['cv']['speciality'] == 'Врач':
+        specialisation_text = f'''\n<b>Специализация:</b> {print_specialisation(tg_id, 'cv')}'''
+        education_text = ''
+    else:
+        specialisation_text = ''
+        education_text = (
+            f'''\n<b>Образование:</b> {user['cv']['education']
+            if user['cv'].get('education')
+            else 'не указано'}'''
+        )
+    text = f'''
+<b>ФИО:</b> {user['cv']['name']
+        if user['cv'].get('name')
+        else 'не указано'}
+<b>Возраст:</b> {user['cv']['age']
+        if user['cv'].get('age')
+        else 'не указан'}{education_text}
+<b>Опыт:</b> {user['cv']['experience']
+        if user['cv'].get('experience')
+        else 'не указан'}
+<b>Специальность:</b> {user['cv']['speciality']
+        if user['cv'].get('speciality')
+        else 'не указана'}{specialisation_text}
+<b>График работы:</b> {user['cv']['schedule']
+        if user['cv'].get('schedule')
+        else 'Не важно'}
+<b>Минимальная оплата труда:</b> {user['cv']['salary']
+        if user['cv'].get('salary')
+        else 'Не важно'}
+<b>Предпочитительное место работы:</b>\n{print_location(tg_id, 'cv')}
+<b>Фото:</b> {'Чтобы посмотреть фотографию, нажмите /photo'
+        if user['cv'].get('photo')
+        else 'Фото не добавлялось'}
+'''
+    if user['cv'].get('photo'):
+        filename = str(tg_id) + '_0_'
+        files = os.listdir(path=f'images/{tg_id}')
+        for file in files:
+            if filename in file:
+                photo = os.path.join('images', f'{tg_id}', file)
+    else:
+        photo = False
+    return text, photo
 
 
 if __name__ == '__main__':

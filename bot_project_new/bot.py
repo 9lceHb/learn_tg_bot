@@ -8,16 +8,17 @@ from telegram.ext import (
     Filters,
 )
 
-from get_cv_new import cv_handler
+from get_cv import cv_handler
 
-from find_cv import filter_cv_handler
+from filter_cv import filter_handler
 
 
 from handlers import (
     find_work,
     message_if_wrong,
     start,
-    find_worker
+    find_worker,
+    delete_from_base
 )
 
 
@@ -42,8 +43,9 @@ def main() -> None:
     dp = mybot.dispatcher
     dp.add_handler(CommandHandler('start', start))
     dp.add_handler(CallbackQueryHandler(find_work, pattern='^' + 'Найти работу' + '$'))
+    dp.add_handler(CallbackQueryHandler(delete_from_base, pattern='^' + 'удалить запись' + '$'))
     dp.add_handler(cv_handler)
-    dp.add_handler(filter_cv_handler)
+    dp.add_handler(filter_handler)
     dp.add_handler(MessageHandler(Filters.text | Filters.photo, message_if_wrong))
     mybot.start_polling()
     mybot.idle()
