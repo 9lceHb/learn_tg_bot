@@ -2,8 +2,8 @@ from typing import Text
 
 import os
 from telegram import ParseMode
-from bot_project_new.cv_keyboards import speciality_keyboard
-from bot_project_new.utils import (
+from cv_keyboards import speciality_keyboard
+from utils import (
     update_user_location,
     make_station_numbers_set,
     print_filter_age,

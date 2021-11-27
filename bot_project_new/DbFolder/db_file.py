@@ -1,5 +1,5 @@
 from pymongo import MongoClient
-from bot_project_new import settings
+import settings
 
 
 class DBase:
