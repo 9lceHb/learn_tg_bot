@@ -1,0 +1,8 @@
+version: '3'
+
+services:
+  bot:
+    build: bot_project_new/
+    restart: always
+    environment:
+      - TZ=Europe/Moscow

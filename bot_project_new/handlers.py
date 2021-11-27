@@ -1,5 +1,5 @@
 from telegram import ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
-from bot_project_new.utils import firsttime_user
+from utils import firsttime_user
 from DbFolder.db_file import DBase
 from telegram.ext import ConversationHandler
 dbase = DBase()

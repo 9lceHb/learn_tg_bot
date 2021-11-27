@@ -1,4 +1,4 @@
-from bot_project_new import settings
+import settings
 import clarifai_grpc.channel
 from clarifai_grpc.channel.clarifai_channel import ClarifaiChannel
 from clarifai_grpc.grpc.api import service_pb2_grpc

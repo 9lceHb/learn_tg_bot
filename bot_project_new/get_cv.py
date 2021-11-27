@@ -2,7 +2,7 @@ from typing import Text
 
 import os
 from telegram import ParseMode
-from bot_project_new.utils import (
+from utils import (
     is_human_and_sfw,
     update_user_location,
     make_station_numbers_set,
