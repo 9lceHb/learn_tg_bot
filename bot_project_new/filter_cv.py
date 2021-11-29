@@ -1,5 +1,5 @@
 from typing import Text
-
+import base64
 import os
 from telegram import ParseMode
 from cv_keyboards import speciality_keyboard
@@ -11,6 +11,7 @@ from utils import (
     firsttime_user,
     print_specialisation,
     print_cv,
+    clear_photo,
 )
 from DbFolder.db_file import DBase
 from handlers import start_keyboard
@@ -616,7 +617,7 @@ def show_cv_first(update, context):
         return STEP_SHOW_CV
     for_show_user_id = tg_id_list[0]
     dbase.save_filter(current_tg_id, 'show_cv_tg_id', {'tg_id_list': tg_id_list, 'showed_tg_id': for_show_user_id})
-    text, photo = print_cv(for_show_user_id)
+    text = print_cv(for_show_user_id)
     reply_markup = show_cv_keyboard(current_tg_id)
     update.callback_query.edit_message_text(text=text, reply_markup=reply_markup, parse_mode=ParseMode.HTML)
     return STEP_SHOW_CV
@@ -635,7 +636,7 @@ def show_cv(update, context):
     else:
         for_show_user_id = tg_id_list[tg_id_list.index(showed_user_id) + 1]
     dbase.save_filter(current_tg_id, 'show_cv_tg_id', {'tg_id_list': tg_id_list, 'showed_tg_id': for_show_user_id})
-    text, photo = print_cv(for_show_user_id)
+    text = print_cv(for_show_user_id)
     reply_markup = show_cv_keyboard(current_tg_id)
     update.callback_query.edit_message_text(text=text, reply_markup=reply_markup, parse_mode=ParseMode.HTML)
     return STEP_SHOW_CV
@@ -644,10 +645,17 @@ def show_photo(update, context):
     current_tg_id = update.effective_user.id
     current_user = dbase.db_client.users.find_one({'tg_id': current_tg_id})
     showed_user_id = current_user['filter']['show_cv_tg_id']['showed_tg_id']
-    text, photo = print_cv(showed_user_id)
+    showed_user = dbase.db_client.users.find_one({'tg_id': showed_user_id})
+    text = print_cv(showed_user_id)
+    photo_str = showed_user['cv'].get('photo')
+    os.makedirs(f'downloads/{showed_user_id}', exist_ok=True)
+    photo_path = os.path.join('downloads', f'{showed_user_id}', 'user_photo.jpg')
+    with open(photo_path, "wb") as fimage:
+        fimage.write(base64.decodebytes(photo_str))
     chat_id = update.effective_chat.id
     reply_markup = show_cv_keyboard(current_tg_id)
-    context.bot.send_photo(chat_id=chat_id, photo=open(photo, 'rb'))
+    context.bot.send_photo(chat_id=chat_id, photo=open(photo_path, 'rb'))
+    clear_photo(showed_user_id)
     update.message.reply_text(text=text, reply_markup=reply_markup, parse_mode=ParseMode.HTML)
     return STEP_SHOW_CV
 

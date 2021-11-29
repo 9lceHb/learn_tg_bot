@@ -15,19 +15,13 @@ model_safe = 'e9576d86d2004ed1a38ba0cf39ecb4b1'
 
 dbase = DBase()
 
-def make_photo_path(id_photo, photo, path, update, context):
+def make_photo_path(photo, update, context):
     tg_id = update.effective_user.id
     user_photo = context.bot.getFile(photo.file_id)
-    if path == 'downloads':
-        os.makedirs('downloads', exist_ok=True)
-        file_path = os.path.join('downloads', f'{id_photo}_{photo.file_id}.jpg')
-        user_photo.download(file_path)
-        return file_path
-    elif path == 'images':
-        os.makedirs(f'images/{tg_id}', exist_ok=True)
-        new_file_path = os.path.join('images', f'{tg_id}', f'{tg_id}_{id_photo}_{user_photo.file_id}.jpg')
-        return new_file_path
-
+    os.makedirs(f'downloads/{tg_id}', exist_ok=True)
+    file_path = os.path.join('downloads', f'{tg_id}', f'{photo.file_id}.jpg')
+    user_photo.download(file_path)
+    return file_path
 
 # Функция проверяет что на картинке человек и нет контента для взрослых
 def is_human_and_sfw(file_name):
@@ -76,6 +70,10 @@ def make_location_file():
     with open('locations.json', 'w', encoding='utf-8') as f:
         json.dump(response, f, ensure_ascii=False, indent=4)
 
+def clear_photo(tg_id):
+    files = os.listdir(path=f'downloads/{tg_id}/')
+    for file in files:
+        os.remove(f'downloads/{tg_id}/{file}')
 
 # Преобразуем пользовательскую локацию в структурированный формат
 def update_user_location(user_location):
@@ -223,21 +221,12 @@ def print_cv(tg_id):
         if user['cv'].get('photo')
         else 'Фото не добавлялось'}
 '''
-    if user['cv'].get('photo'):
-        filename = str(tg_id) + '_0_'
-        files = os.listdir(path=f'images/{tg_id}')
-        for file in files:
-            if filename in file:
-                photo = os.path.join('images', f'{tg_id}', file)
-    else:
-        photo = False
-    return text, photo
+    return text
 
 
 if __name__ == '__main__':
     # make_location_file()
-    files = os.listdir(path='images/125929447')
+    files = os.listdir(path='downloads/125929447')
     for file in files:
-        if '_0_' in file:
-            file_name = file
+        file_name = file
     print(is_human_and_sfw(f'images/125929447/{file_name}'))
