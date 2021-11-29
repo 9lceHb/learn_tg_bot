@@ -1,6 +1,7 @@
 from typing import Text
 
 import os
+import base64
 from telegram import ParseMode
 from utils import (
     is_human_and_sfw,
@@ -10,6 +11,7 @@ from utils import (
     print_location,
     firsttime_user,
     print_specialisation,
+    clear_photo
 )
 from DbFolder.db_file import DBase
 from handlers import start_keyboard
@@ -658,31 +660,19 @@ def choose_experience(update, context):
         dbase.save_cv(tg_id, 'current_step', 'STEP_UPDATE_CV')
         return STEP_UPDATE_CV
 
+
 def check_user_photo(update, context):
     tg_id = update.effective_user.id
     update.message.reply_text('Обрабатываю фотографию')
-    photo_path_list = []
-    for id, photo in enumerate(update.message.photo[::-1]):
-        user_photo = context.bot.getFile(photo.file_id)
-        photo_path = make_photo_path(id, user_photo, 'downloads', update, context)
-        photo_path_list.append(photo_path)
-
-    if is_human_and_sfw(photo_path_list[0]):
+    photo = update.message.photo[-1]
+    user_photo = context.bot.getFile(photo.file_id)
+    photo_path = make_photo_path(user_photo, update, context)
+    if is_human_and_sfw(photo_path):
         update.message.reply_text('Фото сохранено')
-        if os.path.exists(path=f'images/{tg_id}'):
-            files = os.listdir(path=f'images/{tg_id}')
-            if files:
-                for file in files:
-                    os.remove(f'images/{tg_id}/{file}')
-        for id, photo in enumerate(update.message.photo):
-            user_photo = context.bot.getFile(photo.file_id)
-            photo_path = make_photo_path(id, user_photo, 'images', update, context)
-            os.rename(photo_path_list[id], photo_path)
-            photo_path_list[id] = photo_path
-        files = os.listdir(path='downloads')
-        for file in files:
-            os.remove(f'downloads/{file}')
-        dbase.save_cv(tg_id, 'photo', photo_path_list)
+        with open(photo_path, "rb") as imageFile:
+            image_str = base64.b64encode(imageFile.read())
+        clear_photo(tg_id)
+        dbase.save_cv(tg_id, 'photo', image_str)
         dbase.save_cv(tg_id, 'current_step', 'STEP_UPDATE_CV')
         if firsttime_user(tg_id, 'cv'):
             print_cv_info(update, context, cv_main_keyboard(update, context), callback=False)
@@ -690,9 +680,11 @@ def check_user_photo(update, context):
             print_cv_info(update, context, cv_other_keyboard(update, context), callback=False)
         return STEP_UPDATE_CV
     else:
+        clear_photo(tg_id)
         update.message.reply_text('Фото не подхоидт, выберите другое', reply_markup=photo_pass_keyboard(tg_id))
         dbase.save_cv(tg_id, 'current_step', 'STEP_PHOTO')
         return STEP_PHOTO
+
 
 def photo_pass(update, context):
     update.callback_query.answer()
@@ -717,16 +709,16 @@ def show_photo(update, context):
     tg_id = update.effective_user.id
     user = dbase.db_client.users.find_one({'tg_id': tg_id})
     if user['cv'].get('photo'):
-        filename = str(tg_id) + '_0_'
-        files = os.listdir(path=f'images/{tg_id}')
-        for file in files:
-            if filename in file:
-                photo = os.path.join('images', f'{tg_id}', file)
-                chat_id = update.effective_chat.id
-                context.bot.send_photo(chat_id=chat_id, photo=open(photo, 'rb'))
+        photo_str = user['cv'].get('photo')
+        os.makedirs(f'downloads/{tg_id}', exist_ok=True)
+        photo_path = os.path.join('downloads', f'{tg_id}', 'user_photo.jpg')
+        with open(photo_path, "wb") as fimage:
+            fimage.write(base64.decodebytes(photo_str))
+        chat_id = update.effective_chat.id
+        context.bot.send_photo(chat_id=chat_id, photo=open(photo_path, 'rb'))
+        clear_photo(tg_id)
     print_cv_info(update, context, cv_main_keyboard(update, context), callback=False)
     return STEP_UPDATE_CV
-
 
 # Функция дает ответ если пользователь в анкете не выбрал поле
 def cv_fallback(update, context):
