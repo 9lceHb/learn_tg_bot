@@ -41,13 +41,14 @@ dbase = DBase()
     STEP_FILTER_MAIN,
     STEP_FILTER_PHOTO,
     STEP_FILTER_SPECIALITY,
+    STEP_WRITE_SPECIALITY,
     STEP_FILTER_SPECIALISATION,
     STEP_FILTER_SCHEDULE,
     STEP_FILTER_SALARY,
     STEP_FILTER_EDUCATION,
     STEP_SHOW_CV,
     END
-) = map(chr, range(12))
+) = map(chr, range(13))
 
 smile_speciality = emojize(':memo:', use_aliases=True)
 smile_specialisation = emojize(':microscope:', use_aliases=True)
@@ -79,19 +80,19 @@ def filter_main_keyboard(update, context):
     user = dbase.db_client.users.find_one({'tg_id': tg_id})
     filter_main_buttons = [
         [
-            InlineKeyboardButton(text=f'{smile_speciality} Задать специальность', callback_data=STEP_FILTER_SPECIALITY),
+            InlineKeyboardButton(text=f'{smile_speciality} Специальность', callback_data=STEP_FILTER_SPECIALITY),
         ],
         [
-            InlineKeyboardButton(text=f'{smile_age} Задать возраст', callback_data=STEP_FILTER_AGE),
-            InlineKeyboardButton(text=f'{smile_experience} Задать опыт работы', callback_data=STEP_FILTER_EXPERIENCE),
+            InlineKeyboardButton(text=f'{smile_age} Возраст', callback_data=STEP_FILTER_AGE),
+            InlineKeyboardButton(text=f'{smile_experience} Опыт работы', callback_data=STEP_FILTER_EXPERIENCE),
         ],
         [
-            InlineKeyboardButton(text=f'{smile_location} Задать локацию', callback_data=STEP_FILTER_LOCATION),
+            InlineKeyboardButton(text=f'{smile_location} Локация', callback_data=STEP_FILTER_LOCATION),
             InlineKeyboardButton(text=f'{smile_photo} Наличие фото', callback_data=STEP_FILTER_PHOTO),
         ],
         [
-            InlineKeyboardButton(text=f'{smile_shedule} Задать график работы', callback_data=STEP_FILTER_SCHEDULE),
-            InlineKeyboardButton(text=f'{smile_salary} Задать зарлату', callback_data=STEP_FILTER_SALARY),
+            InlineKeyboardButton(text=f'{smile_shedule} График работы', callback_data=STEP_FILTER_SCHEDULE),
+            InlineKeyboardButton(text=f'{smile_salary} Зарлата', callback_data=STEP_FILTER_SALARY),
         ],
         [
             InlineKeyboardButton(text=f'{smile_rdy} Показать анкеты', callback_data='Показать анкеты'),
@@ -100,26 +101,32 @@ def filter_main_keyboard(update, context):
             InlineKeyboardButton(text=f'{smile_rdy} Готово', callback_data=END),
         ]
     ]
-    if user['filter']['speciality'] == 'Врач':
-        filter_main_buttons.insert(1, [InlineKeyboardButton(
-            text=f'{smile_specialisation} Задать специализацию',
+    if user['filter']['speciality'] == 'Стоматолог':
+        filter_main_buttons[0].insert(1, InlineKeyboardButton(
+            text=f'{smile_specialisation} Специализация',
             callback_data=STEP_FILTER_SPECIALISATION
-        )])
+        ))
     else:
-        filter_main_buttons.insert(1, [InlineKeyboardButton(
-            text=f'{smile_education} Задать образование',
+        filter_main_buttons[0].insert(1, InlineKeyboardButton(
+            text=f'{smile_education} Образование',
             callback_data=STEP_FILTER_EDUCATION
-        )])
+        ))
     return InlineKeyboardMarkup(filter_main_buttons)
 
 
 def filter_speciality_keyboard():
     filter_speciality_buttons = [
-        [InlineKeyboardButton(text='Врач', callback_data='Врач')],
-        [InlineKeyboardButton(text='Мед работник', callback_data='Мед работник')],
+        [InlineKeyboardButton(text='Стоматолог', callback_data='Стоматолог')],
+        [InlineKeyboardButton(text='Медсестра', callback_data='Медсестра')],
         [InlineKeyboardButton(text='Ассистент', callback_data='Ассистент')]
     ]
     return InlineKeyboardMarkup(filter_speciality_buttons)
+
+def filter_invite_keyboard():
+    filter_invite_buttons = [
+        [InlineKeyboardButton(text=f'{smile_rdy} Приступим!', callback_data='Приступим')],
+    ]
+    return InlineKeyboardMarkup(filter_invite_buttons)
 
 
 def filter_specialisation_keyboard(tg_id):
@@ -145,7 +152,7 @@ def filter_specialisation_keyboard(tg_id):
 
 def filter_schedule_keyboard(tg_id):
     user = dbase.db_client.users.find_one({'tg_id': tg_id})
-    if user['filter']['speciality'] == 'Мед работник':
+    if user['filter']['speciality'] == 'Медсестра':
         filter_schedule_buttons = [
             [InlineKeyboardButton(text='Любой график', callback_data='Любой график')],
             [InlineKeyboardButton(text='Частичная занятость', callback_data='Частичная занятость')],
@@ -168,7 +175,7 @@ def filter_schedule_keyboard(tg_id):
 
 def filter_salary_keyboard(tg_id):
     user = dbase.db_client.users.find_one({'tg_id': tg_id})
-    if user['filter']['speciality'] != 'Врач':
+    if user['filter']['speciality'] != 'Стоматолог':
         filter_salary_buttons = [
             [InlineKeyboardButton(text=f'{smile_salary} до 2000', callback_data='до 2000 руб./0')],
             [InlineKeyboardButton(text=f'{smile_salary} до 3000', callback_data='до 3000 руб./1')],
@@ -184,7 +191,7 @@ def filter_salary_keyboard(tg_id):
 
 def filter_education_keyboard(tg_id):
     user = dbase.db_client.users.find_one({'tg_id': tg_id})
-    if user['filter']['speciality'] == 'Мед работник':
+    if user['filter']['speciality'] == 'Медсестра':
         filter_education_buttons = [
             [InlineKeyboardButton(text='среднее', callback_data='среднее/0')],
             [InlineKeyboardButton(
@@ -197,7 +204,7 @@ def filter_education_keyboard(tg_id):
         filter_education_buttons = [
             [InlineKeyboardButton(text='среднее', callback_data='среднее/0')],
             [InlineKeyboardButton(text='среднее медицинское', callback_data='среднее медицинское/1')],
-            [InlineKeyboardButton(text='высшее неокончанное', callback_data='высшее неокончанное/2')],
+            [InlineKeyboardButton(text='высшее неоконченное', callback_data='высшее неоконченное/2')],
             [InlineKeyboardButton(text='высшее', callback_data='высшее/3')],
         ]
     return InlineKeyboardMarkup(filter_education_buttons)
@@ -205,7 +212,7 @@ def filter_education_keyboard(tg_id):
 
 def filter_experience_keyboard(tg_id):
     user = dbase.db_client.users.find_one({'tg_id': tg_id})
-    if user['filter']['speciality'] == 'Мед работник':
+    if user['filter']['speciality'] == 'Медсестра':
         filter_experience_buttons = [
             [InlineKeyboardButton(text='без опыта', callback_data='без опыта/0')],
             [InlineKeyboardButton(
@@ -273,7 +280,7 @@ def print_filter_info(update, context, callback=True):
     tg_id = update.effective_user.id
     user = dbase.db_client.users.find_one({'tg_id': tg_id})
     dbase.db_client.users.update_one({'_id': user['_id']}, {'$set': {'filter.first_time': False}})
-    if user['filter']['speciality'] == 'Врач':
+    if user['filter']['speciality'] == 'Стоматолог':
         specialisation_text = f'''\n  <b>Специализация:</b> {print_specialisation(tg_id, 'filter')}'''
         education_text = ''
     else:
@@ -359,7 +366,7 @@ def get_filter_text(key, tg_id):
 '''
         keyboard = filter_schedule_keyboard(tg_id)
     elif key == STEP_FILTER_SALARY:
-        if user['filter']['speciality'] != 'Врач':
+        if user['filter']['speciality'] != 'Стоматолог':
             text = '''
 Выберите минимальную оплату сотрудника за смену(полдня, 6 - 8 часов).
 '''
@@ -452,21 +459,34 @@ def manage_filter_button(update, context):
     update.callback_query.edit_message_text(text=text, reply_markup=reply_markup, parse_mode=ParseMode.HTML)
     return user_data_key
 
-
 def filter_start(update, context):
     update.callback_query.answer()
     tg_id = update.effective_user.id
     if firsttime_user(tg_id, 'filter'):
-        text = get_filter_text(STEP_FILTER_SPECIALITY, tg_id)[0]
+        text = '''
+Пожалуйста, задайте важные для Вас параметры, и я покажу анкеты, которые подходят для Вас наилучшим образом!
+'''
         update.callback_query.edit_message_text(
             text=text,
-            reply_markup=filter_speciality_keyboard(),
+            reply_markup=filter_invite_keyboard(),
             parse_mode=ParseMode.HTML
         )
-        return STEP_FILTER_SPECIALITY
+        return STEP_WRITE_SPECIALITY
     else:
         print_filter_info(update, context)
         return STEP_FILTER_MAIN
+
+
+def write_speciality(update, context):
+    update.callback_query.answer()
+    tg_id = update.effective_user.id
+    text = get_filter_text(STEP_FILTER_SPECIALITY, tg_id)[0]
+    update.callback_query.edit_message_text(
+        text=text,
+        reply_markup=filter_speciality_keyboard(),
+        parse_mode=ParseMode.HTML
+    )
+    return STEP_FILTER_SPECIALITY
 
 
 def filter_speciality(update, context):
@@ -659,12 +679,6 @@ def show_photo(update, context):
     update.message.reply_text(text=text, reply_markup=reply_markup, parse_mode=ParseMode.HTML)
     return STEP_SHOW_CV
 
-def filter_fallback(update, context):
-    # Функция дает ответ если пользователь в анкете не выбрал поле
-    tg_id = update.effective_user.id
-    print_filter_info(update, context, callback=False)
-    return STEP_FILTER_MAIN
-
 
 # Завершение анкеты выход из ConversationHandler
 def end_describing_filter(update, context):
@@ -677,17 +691,34 @@ def end_describing_filter(update, context):
     )
     return ConversationHandler.END
 
+def filter_fallback(update, context):
+    tg_id = update.effective_user.id
+    if firsttime_user(tg_id, 'filter'):
+        text = '''
+Пожалуйста, задайте важные для Вас параметры, и я покажу анкеты, которые подходят для Вас наилучшим образом!
+'''
+        update.message.reply_text(
+            text=text,
+            reply_markup=filter_invite_keyboard(),
+            parse_mode=ParseMode.HTML
+        )
+        return STEP_WRITE_SPECIALITY
+    else:
+        print_filter_info(update, context, callback=False)
+        return STEP_FILTER_MAIN
+
 filter_handler = ConversationHandler(
     entry_points=[
-        CallbackQueryHandler(filter_start, pattern='^' + 'Найти сотрудника' + '$')
+        CallbackQueryHandler(filter_start, pattern='^' + 'Найти сотрудника' + '$'),
     ],
     states={
+        STEP_WRITE_SPECIALITY: [CallbackQueryHandler(write_speciality)],
         STEP_FILTER_SPECIALITY: [CallbackQueryHandler(filter_speciality)],
         STEP_FILTER_SPECIALISATION: [CallbackQueryHandler(filter_specialisation)],
         STEP_FILTER_SCHEDULE: [CallbackQueryHandler(filter_schedule)],
-        STEP_FILTER_LOCATION: [MessageHandler(Filters.text, filter_location)],
+        STEP_FILTER_LOCATION: [MessageHandler(Filters.text & (~ Filters.command), filter_location)],
         STEP_FILTER_SALARY: [CallbackQueryHandler(filter_salary)],
-        STEP_FILTER_AGE: [MessageHandler(Filters.text, filter_age)],
+        STEP_FILTER_AGE: [MessageHandler(Filters.text & (~ Filters.command), filter_age)],
         STEP_FILTER_EDUCATION: [CallbackQueryHandler(filter_education)],
         STEP_FILTER_EXPERIENCE: [CallbackQueryHandler(filter_experience)],
         STEP_FILTER_PHOTO: [CallbackQueryHandler(filter_photo)],
@@ -701,9 +732,8 @@ filter_handler = ConversationHandler(
         ],
     },
     fallbacks=[
-        MessageHandler(Filters.text | Filters.photo | Filters.video, filter_fallback),
+        MessageHandler(Filters.text & (~ Filters.command) | Filters.photo | Filters.video, filter_fallback),
         CallbackQueryHandler(end_describing_filter, pattern='^' + str(END) + '$'),
-        CommandHandler('start', start),
     ],
     allow_reentry=True
 )

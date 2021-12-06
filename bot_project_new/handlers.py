@@ -42,7 +42,6 @@ def start(update, context):
 Чем я могу быть Вам полезен?
 '''
     update.message.reply_text(text=text, reply_markup=reply_markup)
-    # update.effective_message.reply_html('Use bad_command to cause an error.')
 
 def delete_from_base(update, context):
     tg_id = update.effective_user.id
@@ -60,16 +59,23 @@ def delete_from_base(update, context):
 
 # Обработка кнопи - найти работу
 def find_work(update, context):
+    tg_id = update.effective_user.id
     update.callback_query.answer()
     reply_markup = find_work_keyboard(update.effective_user.id)
     dbase.get_or_create_user(update.effective_user)
-    text = '''
+    if firsttime_user(tg_id, 'cv'):
+        text = '''
 Прежде всего, давайте познакомимся. Я задам несколько
 вопросов, которые помогут мне предложить Вам наиболее
 подходящие вакансии, а также, если Вы захотите,
 опубликовать Ваше резюме для соискателя.
 Это займет не более 3 минут.
 '''
+    else:
+        text = '''
+Здесь Вы можете отредактировать свою анкету, или удалить ее из поиска.
+'''
+        
     update.callback_query.edit_message_text(text=text, reply_markup=reply_markup)
 
 

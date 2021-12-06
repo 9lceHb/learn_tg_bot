@@ -185,9 +185,15 @@ def print_filter_age(tg_id):
     return text
 
 
-def print_cv(tg_id):
+def print_cv(tg_id, paid=False):
     user = dbase.db_client.users.find_one({'tg_id': tg_id})
-    if user['cv']['speciality'] == 'Врач':
+    if (user['cv'].get('photo') and paid is True):
+        photo_text = 'Чтобы посмотреть фотографию, нажмите /photo'
+    elif (user['cv'].get('photo') and  paid is False):
+        photo_text = 'Для просмотра необходимо оплатить анкету'
+    else:
+        photo_text = 'Фото не добавлялось'
+    if user['cv']['speciality'] == 'Стоматолог':
         specialisation_text = f'''\n<b>Специализация:</b> {print_specialisation(tg_id, 'cv')}'''
         education_text = ''
     else:
@@ -199,8 +205,8 @@ def print_cv(tg_id):
         )
     text = f'''
 <b>ФИО:</b> {user['cv']['name']
-        if user['cv'].get('name')
-        else 'не указано'}
+        if paid is True
+        else 'Для просмотра необходимо оплатить анкету'}
 <b>Возраст:</b> {user['cv']['age']
         if user['cv'].get('age')
         else 'не указан'}{education_text}
@@ -217,9 +223,10 @@ def print_cv(tg_id):
         if user['cv'].get('salary')
         else 'Не важно'}
 <b>Предпочитительное место работы:</b>\n{print_location(tg_id, 'cv')}
-<b>Фото:</b> {'Чтобы посмотреть фотографию, нажмите /photo'
-        if user['cv'].get('photo')
-        else 'Фото не добавлялось'}
+<b>Номер телефона:</b> {user['cv']['phone']
+        if paid is True
+        else 'Для просмотра необходимо оплатить анкету'}
+<b>Фото:</b> {photo_text}
 '''
     return text
 

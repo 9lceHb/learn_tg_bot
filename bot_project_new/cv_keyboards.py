@@ -1,7 +1,10 @@
 from typing import Text
+import requests
 from telegram import (
     InlineKeyboardButton,
     InlineKeyboardMarkup,
+    ReplyKeyboardMarkup,
+    KeyboardButton
 )
 from utils import firsttime_user
 from emoji import emojize
@@ -22,8 +25,9 @@ dbase = DBase()
     STEP_SALARY,
     STEP_EDUCATION,
     STEP_BACK,
+    STEP_CONTACT,
     END
-) = map(chr, range(15))
+) = map(chr, range(16))
 
 smile_speciality = emojize(':memo:', use_aliases=True)
 smile_specialisation = emojize(':microscope:', use_aliases=True)
@@ -77,7 +81,7 @@ def cv_other_keyboard(update, context):
     user = dbase.db_client.users.find_one({'tg_id': tg_id})
     cv_other_buttons = [
         [
-            InlineKeyboardButton(text=f'{smile_speciality} Специальность', callback_data=STEP_SPECIALITY,),
+            InlineKeyboardButton(text=f'{smile_speciality} Специальность', callback_data=STEP_SPECIALITY),
         ],
         [
             InlineKeyboardButton(text=f'{smile_specialisation} Специализация', callback_data=STEP_SPECIALISATION),
@@ -103,7 +107,7 @@ def cv_other_keyboard(update, context):
             InlineKeyboardButton(text=f'{smile_rdy} Готово', callback_data=END),
         ]
     ]
-    if user['cv']['speciality'] != 'Врач':
+    if user['cv']['speciality'] != 'Стоматолог':
         cv_other_buttons.remove([InlineKeyboardButton(
             text=f'{smile_specialisation} Специализация',
             callback_data=STEP_SPECIALISATION
@@ -115,8 +119,8 @@ def cv_other_keyboard(update, context):
 
 def speciality_keyboard():
     speciality_buttons = [
-        [InlineKeyboardButton(text='Врач', callback_data='Врач')],
-        [InlineKeyboardButton(text='Мед работник', callback_data='Мед работник')],
+        [InlineKeyboardButton(text='Стоматолог', callback_data='Стоматолог')],
+        [InlineKeyboardButton(text='Медсестра', callback_data='Медсестра')],
         [InlineKeyboardButton(text='Ассистент', callback_data='Ассистент')]
     ]
     return InlineKeyboardMarkup(speciality_buttons)
@@ -150,7 +154,7 @@ def specialisation_keyboard(tg_id):
 
 def schedule_keyboard(tg_id):
     user = dbase.db_client.users.find_one({'tg_id': tg_id})
-    if user['cv']['speciality'] == 'Мед работник':
+    if user['cv']['speciality'] == 'Медсестра':
         schedule_buttons = [
             [InlineKeyboardButton(text='Любой график', callback_data='Любой график')],
             [InlineKeyboardButton(text='Частичная занятость', callback_data='Частичная занятость')],
@@ -176,7 +180,7 @@ def schedule_keyboard(tg_id):
 
 def salary_keyboard(tg_id):
     user = dbase.db_client.users.find_one({'tg_id': tg_id})
-    if user['cv']['speciality'] != 'Врач':
+    if user['cv']['speciality'] != 'Стоматолог':
         salary_buttons = [
             [InlineKeyboardButton(text=f'{smile_salary} от 1000 руб.', callback_data='от 1000 руб./0')],
             [InlineKeyboardButton(text=f'{smile_salary} от 2000 руб.', callback_data='от 2000 руб./1')],
@@ -195,7 +199,7 @@ def salary_keyboard(tg_id):
 
 def education_keyboard(tg_id):
     user = dbase.db_client.users.find_one({'tg_id': tg_id})
-    if user['cv']['speciality'] == 'Мед работник':
+    if user['cv']['speciality'] == 'Медсестра':
         education_buttons = [
             [InlineKeyboardButton(text='среднее', callback_data='среднее/0')],
             [InlineKeyboardButton(
@@ -208,7 +212,7 @@ def education_keyboard(tg_id):
         education_buttons = [
             [InlineKeyboardButton(text='среднее', callback_data='среднее/0')],
             [InlineKeyboardButton(text='среднее медицинское', callback_data='среднее медицинское/1')],
-            [InlineKeyboardButton(text='высшее неокончанное', callback_data='высшее неокончанное/2')],
+            [InlineKeyboardButton(text='высшее неоконченное', callback_data='высшее неоконченное/2')],
             [InlineKeyboardButton(text='высшее', callback_data='высшее/3')],
         ]
     if firsttime_user(tg_id, 'cv'):
@@ -219,7 +223,7 @@ def education_keyboard(tg_id):
 
 def experience_keyboard(tg_id):
     user = dbase.db_client.users.find_one({'tg_id': tg_id})
-    if user['cv']['speciality'] == 'Мед работник':
+    if user['cv']['speciality'] == 'Медсестра':
         experience_buttons = [
             [InlineKeyboardButton(text='без опыта', callback_data='без опыта/0')],
             [InlineKeyboardButton(
@@ -269,3 +273,7 @@ def back_keyboard():
         [InlineKeyboardButton(text=text_back, callback_data='back_cv')]
     ]
     return InlineKeyboardMarkup(photo_button)
+
+def contact_keyboard():
+    button = KeyboardButton('Поделиться номером телефона', request_contact=True)
+    return ReplyKeyboardMarkup([[button]], one_time_keyboard=True, resize_keyboard=True)
