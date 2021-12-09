@@ -24,7 +24,7 @@ from telegram.ext import (
 )
 from handlers import start
 
-from cv_keyboards import (
+from keyboards import (
     cv_main_keyboard,
     cv_other_keyboard,
     speciality_keyboard,
@@ -51,7 +51,7 @@ from cv_keyboards import (
     STEP_EDUCATION,
     STEP_BACK,
     STEP_CONTACT,
-    END
+    STEP_CV_END
 )
 
 
@@ -861,7 +861,7 @@ cv_handler = ConversationHandler(
     },
     fallbacks=[
         MessageHandler(Filters.text & (~ Filters.command) | Filters.photo | Filters.video, cv_fallback),
-        CallbackQueryHandler(end_describing_cv, pattern='^' + str(END) + '$'),
+        CallbackQueryHandler(end_describing_cv, pattern='^' + str(STEP_CV_END) + '$'),
         CommandHandler('stop', cancel_conversation),
     ],
     allow_reentry=True

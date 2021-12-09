@@ -23,6 +23,8 @@ class DBase:
                 'username': effective_user.username,
                 'registration_datetime': now,
                 'last_usetime': now,
+                'balance': 0,
+                'payments': [],
                 'cv': {'show_cv': False, 'specialisation': [], 'first_time': True},
                 'filter': {'specialisation': [], 'first_time': True}
             }

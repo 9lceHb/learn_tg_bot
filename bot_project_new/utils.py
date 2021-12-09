@@ -185,7 +185,7 @@ def print_filter_age(tg_id):
     return text
 
 
-def print_cv(tg_id, paid=False):
+def print_cv(tg_id, balance, paid=False):
     user = dbase.db_client.users.find_one({'tg_id': tg_id})
     if (user['cv'].get('photo') and paid is True):
         photo_text = 'Чтобы посмотреть фотографию, нажмите /photo'
@@ -204,6 +204,8 @@ def print_cv(tg_id, paid=False):
             else 'не указано'}'''
         )
     text = f'''
+Ваш <b>текущий баланс</b> составляет {balance} рублей.
+
 <b>ФИО:</b> {user['cv']['name']
         if paid is True
         else 'Для просмотра необходимо оплатить анкету'}

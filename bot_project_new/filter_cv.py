@@ -1,8 +1,7 @@
 from typing import Text
 import base64
 import os
-from telegram import ParseMode
-from cv_keyboards import speciality_keyboard
+from telegram import ParseMode, LabeledPrice
 from utils import (
     update_user_location,
     make_station_numbers_set,
@@ -13,7 +12,6 @@ from utils import (
     print_cv,
     clear_photo,
 )
-from DbFolder.db_file import DBase
 from handlers import start_keyboard
 from telegram.ext import (
     MessageHandler,
@@ -22,19 +20,21 @@ from telegram.ext import (
     CallbackQueryHandler,
     CommandHandler,
 )
-from handlers import start
+from payments import payment_conv_handler
 
-
-dbase = DBase()
-
-from telegram import (
-    InlineKeyboardButton,
-    InlineKeyboardMarkup,
-)
-from emoji import emojize
 from DbFolder.db_file import DBase
 dbase = DBase()
-(
+from keyboards import(
+    filter_main_keyboard,
+    filter_speciality_keyboard,
+    filter_invite_keyboard,
+    filter_specialisation_keyboard,
+    filter_schedule_keyboard,
+    filter_salary_keyboard,
+    filter_education_keyboard,
+    filter_experience_keyboard,
+    filter_photo_keyboard,
+    show_cv_keyboard,
     STEP_FILTER_AGE,
     STEP_FILTER_EXPERIENCE,
     STEP_FILTER_LOCATION,
@@ -47,234 +47,9 @@ dbase = DBase()
     STEP_FILTER_SALARY,
     STEP_FILTER_EDUCATION,
     STEP_SHOW_CV,
-    END
-) = map(chr, range(13))
+    STEP_FILTER_END,
+)
 
-smile_speciality = emojize(':memo:', use_aliases=True)
-smile_specialisation = emojize(':microscope:', use_aliases=True)
-smile_education = emojize(':mortar_board:', use_aliases=True)
-smile_experience = emojize(':clock12:', use_aliases=True)
-smile_shedule = emojize(':date:', use_aliases=True)
-smile_salary = emojize(':dollar:', use_aliases=True)
-smile_back = emojize(':arrow_left:', use_aliases=True)
-smile_yes = emojize(':white_check_mark:', use_aliases=True)
-smile_no = emojize(':white_medium_square:', use_aliases=True)
-smile_name = emojize(':mens:', use_aliases=True)
-smile_age = emojize(':hourglass_flowing_sand:', use_aliases=True)
-smile_location = emojize(':earth_africa:', use_aliases=True)
-smile_photo = emojize(':camera:', use_aliases=True)
-smile_other = emojize(':capital_abcd:', use_aliases=True)
-smile_rdy = emojize(':arrow_right:', use_aliases=True)
-smile_up = emojize(':arrow_up:', use_aliases=True)
-smile_1 = None  # emojize(':one:', use_aliases=True)
-smile_2 = None  # emojize(':two:', use_aliases=True)
-smile_3 = None  # emojize(':three:', use_aliases=True)
-smile_4 = None  # emojize(':four:', use_aliases=True)
-smile_5 = None  # emojize(':five:', use_aliases=True)
-smile_pass = emojize(':arrow_right:', use_aliases=True)
-smile_worker = emojize(':construction_worker:', use_aliases=True)
-
-def filter_main_keyboard(update, context):
-    # основная клавиатура для анкеты
-    tg_id = update.effective_user.id
-    user = dbase.db_client.users.find_one({'tg_id': tg_id})
-    filter_main_buttons = [
-        [
-            InlineKeyboardButton(text=f'{smile_speciality} Специальность', callback_data=STEP_FILTER_SPECIALITY),
-        ],
-        [
-            InlineKeyboardButton(text=f'{smile_age} Возраст', callback_data=STEP_FILTER_AGE),
-            InlineKeyboardButton(text=f'{smile_experience} Опыт работы', callback_data=STEP_FILTER_EXPERIENCE),
-        ],
-        [
-            InlineKeyboardButton(text=f'{smile_location} Локация', callback_data=STEP_FILTER_LOCATION),
-            InlineKeyboardButton(text=f'{smile_photo} Наличие фото', callback_data=STEP_FILTER_PHOTO),
-        ],
-        [
-            InlineKeyboardButton(text=f'{smile_shedule} График работы', callback_data=STEP_FILTER_SCHEDULE),
-            InlineKeyboardButton(text=f'{smile_salary} Зарлата', callback_data=STEP_FILTER_SALARY),
-        ],
-        [
-            InlineKeyboardButton(text=f'{smile_rdy} Показать анкеты', callback_data='Показать анкеты'),
-        ],
-        [
-            InlineKeyboardButton(text=f'{smile_rdy} Готово', callback_data=END),
-        ]
-    ]
-    if user['filter']['speciality'] == 'Стоматолог':
-        filter_main_buttons[0].insert(1, InlineKeyboardButton(
-            text=f'{smile_specialisation} Специализация',
-            callback_data=STEP_FILTER_SPECIALISATION
-        ))
-    else:
-        filter_main_buttons[0].insert(1, InlineKeyboardButton(
-            text=f'{smile_education} Образование',
-            callback_data=STEP_FILTER_EDUCATION
-        ))
-    return InlineKeyboardMarkup(filter_main_buttons)
-
-
-def filter_speciality_keyboard():
-    filter_speciality_buttons = [
-        [InlineKeyboardButton(text='Стоматолог', callback_data='Стоматолог')],
-        [InlineKeyboardButton(text='Медсестра', callback_data='Медсестра')],
-        [InlineKeyboardButton(text='Ассистент', callback_data='Ассистент')]
-    ]
-    return InlineKeyboardMarkup(filter_speciality_buttons)
-
-def filter_invite_keyboard():
-    filter_invite_buttons = [
-        [InlineKeyboardButton(text=f'{smile_rdy} Приступим!', callback_data='Приступим')],
-    ]
-    return InlineKeyboardMarkup(filter_invite_buttons)
-
-
-def filter_specialisation_keyboard(tg_id):
-    user = dbase.db_client.users.find_one({'tg_id': tg_id})
-    text_rdy = f'{smile_rdy} Готово'
-    filter_specialisation_buttons = []
-    specialisation_list = ['Терапевт', 'Ортопед', 'Хирург', 'Ортодонт', 'Детский врач']
-    if user['filter']['specialisation']:
-        user_specialis_list = user['filter'].get('specialisation')
-        for spec in specialisation_list:
-            if spec in user_specialis_list:
-                text = f'{smile_yes} {spec}'
-            else:
-                text = f'{smile_no} {spec}'
-            filter_specialisation_buttons.append([InlineKeyboardButton(text=text, callback_data=spec)])
-    else:
-        for spec in specialisation_list:
-            text = f'{smile_no} {spec}'
-            filter_specialisation_buttons.append([InlineKeyboardButton(text=text, callback_data=spec)])
-    filter_specialisation_buttons.append([InlineKeyboardButton(text=text_rdy, callback_data='end_specialisation_f')])
-    return InlineKeyboardMarkup(filter_specialisation_buttons)
-
-
-def filter_schedule_keyboard(tg_id):
-    user = dbase.db_client.users.find_one({'tg_id': tg_id})
-    if user['filter']['speciality'] == 'Медсестра':
-        filter_schedule_buttons = [
-            [InlineKeyboardButton(text='Любой график', callback_data='Любой график')],
-            [InlineKeyboardButton(text='Частичная занятость', callback_data='Частичная занятость')],
-            [InlineKeyboardButton(text='Разовый выход', callback_data='Разовый выход')],
-        ]
-    elif user['filter']['speciality'] == 'Ассистент':
-        filter_schedule_buttons = [
-            [InlineKeyboardButton(text='Любой график', callback_data='Любой график')],
-            [InlineKeyboardButton(text='Только выходные', callback_data='Только выходные')],
-            [InlineKeyboardButton(text='Только первая смена', callback_data='Только первая смена')],
-            [InlineKeyboardButton(text='Только вторая смена', callback_data='Только вторая смена')],
-            [InlineKeyboardButton(text='Разовый выход', callback_data='Разовый выход')],
-        ]
-    else:
-        filter_schedule_buttons = [
-            [InlineKeyboardButton(text='Полная занятость', callback_data='Полная занятость')],
-            [InlineKeyboardButton(text='Частичная занятость', callback_data='Частичная занятость')],
-        ]
-    return InlineKeyboardMarkup(filter_schedule_buttons)
-
-def filter_salary_keyboard(tg_id):
-    user = dbase.db_client.users.find_one({'tg_id': tg_id})
-    if user['filter']['speciality'] != 'Стоматолог':
-        filter_salary_buttons = [
-            [InlineKeyboardButton(text=f'{smile_salary} до 2000', callback_data='до 2000 руб./0')],
-            [InlineKeyboardButton(text=f'{smile_salary} до 3000', callback_data='до 3000 руб./1')],
-            [InlineKeyboardButton(text=f'{smile_salary} от 3000', callback_data='от 3000 руб./2')],
-        ]
-    else:
-        filter_salary_buttons = [
-            [InlineKeyboardButton(text=f'{smile_salary} до 40000', callback_data='до 40000 руб./0')],
-            [InlineKeyboardButton(text=f'{smile_salary} до 80000', callback_data='до 80000 руб./1')],
-            [InlineKeyboardButton(text=f'{smile_salary} от 80000', callback_data='от 80000 руб./2')],
-        ]
-    return InlineKeyboardMarkup(filter_salary_buttons)
-
-def filter_education_keyboard(tg_id):
-    user = dbase.db_client.users.find_one({'tg_id': tg_id})
-    if user['filter']['speciality'] == 'Медсестра':
-        filter_education_buttons = [
-            [InlineKeyboardButton(text='среднее', callback_data='среднее/0')],
-            [InlineKeyboardButton(
-                text='среднее медицинское, неоконченное',
-                callback_data='среднее мед., неоконченное/1'
-            )],
-            [InlineKeyboardButton(text='среднее медицинское', callback_data='среднее медицинское/2')],
-        ]
-    else:
-        filter_education_buttons = [
-            [InlineKeyboardButton(text='среднее', callback_data='среднее/0')],
-            [InlineKeyboardButton(text='среднее медицинское', callback_data='среднее медицинское/1')],
-            [InlineKeyboardButton(text='высшее неоконченное', callback_data='высшее неоконченное/2')],
-            [InlineKeyboardButton(text='высшее', callback_data='высшее/3')],
-        ]
-    return InlineKeyboardMarkup(filter_education_buttons)
-
-
-def filter_experience_keyboard(tg_id):
-    user = dbase.db_client.users.find_one({'tg_id': tg_id})
-    if user['filter']['speciality'] == 'Медсестра':
-        filter_experience_buttons = [
-            [InlineKeyboardButton(text='без опыта', callback_data='без опыта/0')],
-            [InlineKeyboardButton(
-                text='с опытом работы в медучреждении',
-                callback_data='с опытом работы в медучреждении/1'
-            )],
-            [InlineKeyboardButton(
-                text='с опытом работы в стоматологии',
-                callback_data='с опытом работы в стоматологии/2'
-            )],
-        ]
-    elif user['filter']['speciality'] == 'Ассистент':
-        filter_experience_buttons = [
-            [InlineKeyboardButton(text='без опыта', callback_data='без опыта/0')],
-            [InlineKeyboardButton(
-                text='выпускник курса "Звездный Ассистент"',
-                callback_data="Звездный Ассистент/1"
-            )],
-            [InlineKeyboardButton(text='с опытом работы', callback_data='с опытом работы/2')],
-        ]
-    else:
-        filter_experience_buttons = [
-            [InlineKeyboardButton(text='без опыта', callback_data='без опыта/0')],
-            [InlineKeyboardButton(text='от 1 года', callback_data='от 1 года/1')],
-            [InlineKeyboardButton(text='от 3 лет', callback_data='от 3 лет/2')],
-            [InlineKeyboardButton(text='от 5 лет', callback_data='от 5 лет/3')],
-        ]
-    return InlineKeyboardMarkup(filter_experience_buttons)
-
-
-def filter_photo_keyboard(tg_id):
-    filter_photo_buttons = [
-        [
-            InlineKeyboardButton(text='Фото необходимо', callback_data='Фото необходимо')
-        ],
-        [
-            InlineKeyboardButton(text='Фото не обязательно', callback_data='Фото не обязательно')
-        ],
-    ]
-    return InlineKeyboardMarkup(filter_photo_buttons)
-
-
-def show_cv_keyboard(tg_id):
-    user = dbase.db_client.users.find_one({'tg_id': tg_id})
-    show_cv_buttons = [
-        [
-            InlineKeyboardButton(text=f'{smile_back} Назад', callback_data='show_cv_back'),
-            InlineKeyboardButton(text=f'{smile_rdy} Далее', callback_data='show_cv_next')
-        ],
-        [
-            InlineKeyboardButton(text=f'{smile_up} Вернуться к выбору анкет', callback_data='show_cv_end')
-        ],
-    ]
-    tg_id_list = user['filter']['show_cv_tg_id']['tg_id_list']
-    showed_tg_id = user['filter']['show_cv_tg_id']['showed_tg_id']
-    if len(tg_id_list) <= 1:
-        show_cv_buttons.pop(0)
-    elif showed_tg_id == tg_id_list[0]:
-        show_cv_buttons[0].pop(0)
-    elif showed_tg_id == tg_id_list[-1]:
-        show_cv_buttons[0].pop(-1)
-    return InlineKeyboardMarkup(show_cv_buttons)
 
 def print_filter_info(update, context, callback=True):
     tg_id = update.effective_user.id
@@ -320,7 +95,12 @@ def print_filter_info(update, context, callback=True):
     else:
         update.message.reply_text(text=text, reply_markup=reply_markup, parse_mode=ParseMode.HTML)
 
-
+show_cv_patterns = (
+    f'^' + 'show_cv_back' + '$|'
+    f'^' + 'show_cv_next' + '$|'
+    f'^' + 'show_cv_end' + '$|'
+    f'^' + 'payment_back_filter' + '$'
+)
 filter_patterns = (
     f'^{STEP_FILTER_AGE}$|'
     f'^{STEP_FILTER_LOCATION}$|'
@@ -637,7 +417,9 @@ def show_cv_first(update, context):
         return STEP_SHOW_CV
     for_show_user_id = tg_id_list[0]
     dbase.save_filter(current_tg_id, 'show_cv_tg_id', {'tg_id_list': tg_id_list, 'showed_tg_id': for_show_user_id})
-    text = print_cv(for_show_user_id)
+    user = dbase.db_client.users.find_one({'tg_id': current_tg_id})
+    balance = user['balance']
+    text = print_cv(for_show_user_id, balance)
     reply_markup = show_cv_keyboard(current_tg_id)
     update.callback_query.edit_message_text(text=text, reply_markup=reply_markup, parse_mode=ParseMode.HTML)
     return STEP_SHOW_CV
@@ -647,16 +429,23 @@ def show_cv(update, context):
     if update.callback_query.data == 'show_cv_end':
         print_filter_info(update, context)
         return STEP_FILTER_MAIN
+    # if update.callback_query.data == 'pay_balance':
+    #     send_payment_invoice(update, context)
     current_tg_id = update.effective_user.id
+    user = dbase.db_client.users.find_one({'tg_id': current_tg_id})
     current_user = dbase.db_client.users.find_one({'tg_id': current_tg_id})
     showed_user_id = current_user['filter']['show_cv_tg_id']['showed_tg_id']
     tg_id_list = current_user['filter']['show_cv_tg_id']['tg_id_list']
     if update.callback_query.data == 'show_cv_back':
         for_show_user_id = tg_id_list[tg_id_list.index(showed_user_id) - 1]
-    else:
+        dbase.save_filter(current_tg_id, 'show_cv_tg_id', {'tg_id_list': tg_id_list, 'showed_tg_id': for_show_user_id})
+    elif update.callback_query.data == 'show_cv_next':
         for_show_user_id = tg_id_list[tg_id_list.index(showed_user_id) + 1]
-    dbase.save_filter(current_tg_id, 'show_cv_tg_id', {'tg_id_list': tg_id_list, 'showed_tg_id': for_show_user_id})
-    text = print_cv(for_show_user_id)
+        dbase.save_filter(current_tg_id, 'show_cv_tg_id', {'tg_id_list': tg_id_list, 'showed_tg_id': for_show_user_id})
+    else:
+        for_show_user_id = user['filter']['show_cv_tg_id']['showed_tg_id']
+    balance = user['balance']
+    text = print_cv(for_show_user_id, balance)
     reply_markup = show_cv_keyboard(current_tg_id)
     update.callback_query.edit_message_text(text=text, reply_markup=reply_markup, parse_mode=ParseMode.HTML)
     return STEP_SHOW_CV
@@ -666,7 +455,9 @@ def show_photo(update, context):
     current_user = dbase.db_client.users.find_one({'tg_id': current_tg_id})
     showed_user_id = current_user['filter']['show_cv_tg_id']['showed_tg_id']
     showed_user = dbase.db_client.users.find_one({'tg_id': showed_user_id})
-    text = print_cv(showed_user_id)
+    user = dbase.db_client.users.find_one({'tg_id': current_tg_id})
+    balance = user['balance']
+    text = print_cv(showed_user_id, balance)
     photo_str = showed_user['cv'].get('photo')
     os.makedirs(f'downloads/{showed_user_id}', exist_ok=True)
     photo_path = os.path.join('downloads', f'{showed_user_id}', 'user_photo.jpg')
@@ -723,8 +514,9 @@ filter_handler = ConversationHandler(
         STEP_FILTER_EXPERIENCE: [CallbackQueryHandler(filter_experience)],
         STEP_FILTER_PHOTO: [CallbackQueryHandler(filter_photo)],
         STEP_SHOW_CV: [
-            CallbackQueryHandler(show_cv),
+            CallbackQueryHandler(show_cv, pattern=show_cv_patterns),
             CommandHandler('photo', show_photo),
+            payment_conv_handler
         ],
         STEP_FILTER_MAIN: [
             CallbackQueryHandler(manage_filter_button, pattern=filter_patterns),
@@ -733,7 +525,8 @@ filter_handler = ConversationHandler(
     },
     fallbacks=[
         MessageHandler(Filters.text & (~ Filters.command) | Filters.photo | Filters.video, filter_fallback),
-        CallbackQueryHandler(end_describing_filter, pattern='^' + str(END) + '$'),
+        CallbackQueryHandler(end_describing_filter, pattern='^' + str(STEP_FILTER_END) + '$'),
     ],
-    allow_reentry=True
+    allow_reentry=True,
+    per_chat=False
 )
