@@ -11,7 +11,8 @@ from utils import (
     print_location,
     firsttime_user,
     print_specialisation,
-    clear_photo
+    clear_photo,
+    find_firstname
 )
 from DbFolder.db_file import DBase
 from handlers import start_keyboard
@@ -530,8 +531,14 @@ def choose_name(update, context):
         update.message.reply_text('Пожалуйста, введите ФИО(не менее 2-х слов)')
         dbase.save_cv(tg_id, 'current_step', 'STEP_NAME')
         return STEP_NAME
-    else:
+    first_name = find_firstname(user_name)
+    if first_name:
         dbase.save_cv(tg_id, 'name', user_name)
+        dbase.save_cv(tg_id, 'first_name', first_name)
+    else:
+        update.message.reply_text('Ваше Имя не найдено в базе имен😢, пожалуйста, введите Ваше настоящее Имя!')
+        dbase.save_cv(tg_id, 'current_step', 'STEP_NAME')
+        return STEP_NAME
     if firsttime_user(update.effective_user.id, 'cv'):
         text = get_step_text(STEP_AGE, tg_id)[0]
         update.message.reply_text(

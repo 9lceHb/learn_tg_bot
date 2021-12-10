@@ -502,15 +502,17 @@ def show_cv_keyboard(tg_id):
         ],
     ]
     tg_id_list = user['filter']['show_cv_tg_id']['tg_id_list']
+    showed_tg_id = user['filter']['show_cv_tg_id']['showed_tg_id']
     if len(tg_id_list) == 0:
         show_cv_buttons.pop(0)
         show_cv_buttons.pop(-1)
         show_cv_buttons.pop(-1)
         return InlineKeyboardMarkup(show_cv_buttons)
-    elif len(tg_id_list) == 1:
+    if showed_tg_id in user['paid_cv']:
+        show_cv_buttons.pop(-2)
+    if len(tg_id_list) == 1:
         show_cv_buttons.pop(0)
         return InlineKeyboardMarkup(show_cv_buttons)
-    showed_tg_id = user['filter']['show_cv_tg_id']['showed_tg_id']
     if showed_tg_id == tg_id_list[0]:
         show_cv_buttons[0].pop(0)
     elif showed_tg_id == tg_id_list[-1]:
@@ -540,6 +542,13 @@ def back_payment_keyboard(amount):
 def after_success_keyboard():
     after_success_button = [
         [InlineKeyboardButton(text=f'{smile_card} Пополнить баланс', callback_data='pay_balance')],
-        [InlineKeyboardButton(text=f'{smile_rdy} Продолжить', callback_data='success_forward')]
+        [InlineKeyboardButton(text=f'{smile_rdy} Просмотр анкет', callback_data='success_forward')]
     ]
     return InlineKeyboardMarkup(after_success_button)
+
+def pay_cv_fail_keyboard():
+    pay_cv_fail_button = [
+        [InlineKeyboardButton(text=f'{smile_card} Пополнить баланс', callback_data='pay_balance')],
+        [InlineKeyboardButton(text=f'{smile_back} Просмотр анкет', callback_data='Показать анкеты')]
+    ]
+    return InlineKeyboardMarkup(pay_cv_fail_button)

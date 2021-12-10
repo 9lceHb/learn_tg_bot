@@ -35,6 +35,7 @@ from keyboards import(
     filter_experience_keyboard,
     filter_photo_keyboard,
     show_cv_keyboard,
+    pay_cv_fail_keyboard,
     STEP_FILTER_AGE,
     STEP_FILTER_EXPERIENCE,
     STEP_FILTER_LOCATION,
@@ -99,6 +100,7 @@ show_cv_patterns = (
     f'^' + 'show_cv_back' + '$|'
     f'^' + 'show_cv_next' + '$|'
     f'^' + 'show_cv_end' + '$|'
+    f'^' + 'Показать анкеты' + '$|'
     f'^' + 'payment_back_filter' + '$'
 )
 filter_patterns = (
@@ -417,9 +419,7 @@ def show_cv_first(update, context):
         return STEP_SHOW_CV
     for_show_user_id = tg_id_list[0]
     dbase.save_filter(current_tg_id, 'show_cv_tg_id', {'tg_id_list': tg_id_list, 'showed_tg_id': for_show_user_id})
-    user = dbase.db_client.users.find_one({'tg_id': current_tg_id})
-    balance = user['balance']
-    text = print_cv(for_show_user_id, balance)
+    text = print_cv(current_tg_id, for_show_user_id)
     reply_markup = show_cv_keyboard(current_tg_id)
     update.callback_query.edit_message_text(text=text, reply_markup=reply_markup, parse_mode=ParseMode.HTML)
     return STEP_SHOW_CV
@@ -429,8 +429,6 @@ def show_cv(update, context):
     if update.callback_query.data == 'show_cv_end':
         print_filter_info(update, context)
         return STEP_FILTER_MAIN
-    # if update.callback_query.data == 'pay_balance':
-    #     send_payment_invoice(update, context)
     current_tg_id = update.effective_user.id
     user = dbase.db_client.users.find_one({'tg_id': current_tg_id})
     current_user = dbase.db_client.users.find_one({'tg_id': current_tg_id})
@@ -444,20 +442,38 @@ def show_cv(update, context):
         dbase.save_filter(current_tg_id, 'show_cv_tg_id', {'tg_id_list': tg_id_list, 'showed_tg_id': for_show_user_id})
     else:
         for_show_user_id = user['filter']['show_cv_tg_id']['showed_tg_id']
-    balance = user['balance']
-    text = print_cv(for_show_user_id, balance)
+    text = print_cv(current_tg_id, for_show_user_id)
     reply_markup = show_cv_keyboard(current_tg_id)
     update.callback_query.edit_message_text(text=text, reply_markup=reply_markup, parse_mode=ParseMode.HTML)
     return STEP_SHOW_CV
+
+def pay_cv(update, context):
+    update.callback_query.answer()
+    tg_id = update.effective_user.id
+    user = dbase.db_client.users.find_one({'tg_id': tg_id})
+    balance = user['balance']
+    if balance >= 50:
+        new_balance = balance - 50
+        dbase.db_client.users.update_one({'_id': user['_id']}, {'$set': {'balance': new_balance}})
+        for_show_user_id = user['filter']['show_cv_tg_id']['showed_tg_id']
+        dbase.db_client.users.update_one({'_id': user['_id']}, {'$push': {'paid_cv': for_show_user_id}})
+        text = print_cv(tg_id, for_show_user_id)
+        reply_markup = show_cv_keyboard(tg_id)
+        update.callback_query.edit_message_text(text=text, reply_markup=reply_markup, parse_mode=ParseMode.HTML)
+        return STEP_SHOW_CV
+    else:
+        text = 'На вашем балансе недостаточно средств!😢'
+        reply_markup = pay_cv_fail_keyboard()
+        update.callback_query.edit_message_text(text=text, reply_markup=reply_markup, parse_mode=ParseMode.HTML)
+        return STEP_SHOW_CV
+
 
 def show_photo(update, context):
     current_tg_id = update.effective_user.id
     current_user = dbase.db_client.users.find_one({'tg_id': current_tg_id})
     showed_user_id = current_user['filter']['show_cv_tg_id']['showed_tg_id']
     showed_user = dbase.db_client.users.find_one({'tg_id': showed_user_id})
-    user = dbase.db_client.users.find_one({'tg_id': current_tg_id})
-    balance = user['balance']
-    text = print_cv(showed_user_id, balance)
+    text = print_cv(current_tg_id, showed_user_id)
     photo_str = showed_user['cv'].get('photo')
     os.makedirs(f'downloads/{showed_user_id}', exist_ok=True)
     photo_path = os.path.join('downloads', f'{showed_user_id}', 'user_photo.jpg')
@@ -516,6 +532,7 @@ filter_handler = ConversationHandler(
         STEP_SHOW_CV: [
             CallbackQueryHandler(show_cv, pattern=show_cv_patterns),
             CommandHandler('photo', show_photo),
+            CallbackQueryHandler(pay_cv, pattern='^' + 'pay_cv' + '$'),
             payment_conv_handler
         ],
         STEP_FILTER_MAIN: [

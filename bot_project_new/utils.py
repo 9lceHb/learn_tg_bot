@@ -120,6 +120,20 @@ def update_user_location(user_location):
             return False
     return user_location
 
+def find_firstname(name):
+    with open('russian_names.json', encoding='utf-8-sig') as f:
+        response = json.load(f)
+        firstname_list = []
+    full_name = name.lower().split()
+    for name in full_name:
+        for subject in response:
+            if subject['Name'].lower() == name:
+                firstname_list.append(subject['Name'])
+    if len(firstname_list) >= 1:
+        return firstname_list[0]
+    else:
+        return False
+
 
 def make_station_numbers_set(user_location):
     numbers = []
@@ -185,8 +199,20 @@ def print_filter_age(tg_id):
     return text
 
 
-def print_cv(tg_id, balance, paid=False):
+def print_cv(main_tg_id, tg_id):
+    # user is user that we should show
+    # main user is user who look at user
     user = dbase.db_client.users.find_one({'tg_id': tg_id})
+    main_user = dbase.db_client.users.find_one({'tg_id': main_tg_id})
+    balance = main_user['balance']
+    if tg_id in main_user['paid_cv']:
+        paid = True
+        paid_text = ''
+    else:
+        paid = False
+        paid_text = '''
+Данная анкета <b>не оплачена</b>, для возможности смотреть ФИО, фото и контакты, необходимо оплатить анкету.
+'''
     if (user['cv'].get('photo') and paid is True):
         photo_text = 'Чтобы посмотреть фотографию, нажмите /photo'
     elif (user['cv'].get('photo') and  paid is False):
@@ -205,10 +231,10 @@ def print_cv(tg_id, balance, paid=False):
         )
     text = f'''
 Ваш <b>текущий баланс</b> составляет {balance} рублей.
-
+{paid_text}
 <b>ФИО:</b> {user['cv']['name']
         if paid is True
-        else 'Для просмотра необходимо оплатить анкету'}
+        else f"{user['cv']['first_name']} ********"}
 <b>Возраст:</b> {user['cv']['age']
         if user['cv'].get('age')
         else 'не указан'}{education_text}
@@ -235,7 +261,9 @@ def print_cv(tg_id, balance, paid=False):
 
 if __name__ == '__main__':
     # make_location_file()
-    files = os.listdir(path='downloads/125929447')
-    for file in files:
-        file_name = file
-    print(is_human_and_sfw(f'images/125929447/{file_name}'))
+    # files = os.listdir(path='downloads/125929447')
+    # for file in files:
+    #     file_name = file
+    # print(is_human_and_sfw(f'images/125929447/{file_name}'))
+
+    find_firstname('Сергей Анатольевич Ясинский')

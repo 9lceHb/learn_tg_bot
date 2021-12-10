@@ -42,8 +42,7 @@ def send_payment_invoice(update, context):
     user = dbase.db_client.users.find_one({'tg_id': tg_id})
     for_show_user_id = user['filter']['show_cv_tg_id']['showed_tg_id']
     if update.callback_query.data == 'payment_back_filter':
-        balance = user['balance']
-        text = print_cv(for_show_user_id, balance)
+        text = print_cv(tg_id, for_show_user_id)
         reply_markup = show_cv_keyboard(tg_id)
         update.callback_query.edit_message_text(text=text, reply_markup=reply_markup, parse_mode=ParseMode.HTML)
         return STEP_PAYMENT_BACK
@@ -122,8 +121,7 @@ def move_after_payment(update, context):
     user = dbase.db_client.users.find_one({'tg_id': tg_id})
     for_show_user_id = user['filter']['show_cv_tg_id']['showed_tg_id']
     if update.callback_query.data == 'success_forward':
-        balance = user['balance']
-        text = print_cv(for_show_user_id, balance)
+        text = print_cv(tg_id, for_show_user_id)
         reply_markup = show_cv_keyboard(tg_id)
         update.callback_query.edit_message_text(text=text, reply_markup=reply_markup, parse_mode=ParseMode.HTML)
         return STEP_PAYMENT_BACK
