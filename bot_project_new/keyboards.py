@@ -42,12 +42,14 @@ dbase = DBase()
     STEP_PAYMENT_DONE,
     STEP_AFTER_PAYMENT,
     STEP_PRECHECKOUT,
-    STEP_PAYMENT_BACK,
+    STEP_PAYMENT_BACK_FILTER,
+    STEP_PAYMENT_BACK_AREA,
     STEP_PAYMENTS_END,
     STEP_MANAGE_AREA,
     STEP_PAY_BALANCE,
     STEP_SUPPORT,
-) = map(chr, range(38))
+    STEP_SAVE_ISSUE,
+) = map(chr, range(40))
 
 smile_speciality = emojize(':memo:', use_aliases=True)
 smile_specialisation = emojize(':microscope:', use_aliases=True)
@@ -75,6 +77,36 @@ smile_worker_2 = '👨‍🔧'
 smile_write = emojize(':pencil2:', use_aliases=True)
 smile_up = emojize(':arrow_up:', use_aliases=True)
 smile_card = emojize(':credit_card:', use_aliases=True)
+smile_work = emojize(':hospital:', use_aliases=True)
+smile_chair = emojize(':seat:', use_aliases=True)
+smile_write = emojize(':pencil2:', use_aliases=True)
+smile_look = emojize(':page_with_curl:', use_aliases=True)
+smile_area = emojize(':house_with_garden:', use_aliases=True)
+
+
+# handlers_kayboards
+def start_keyboard():
+    start_buttons = [
+        [InlineKeyboardButton(text=f'{smile_work} Найти работу', callback_data='Найти работу')],
+        [InlineKeyboardButton(text=f'{smile_worker} Найти сотрудника', callback_data='Найти сотрудника')],
+        [InlineKeyboardButton(text=f'{smile_area} Личный кабинет', callback_data='Личный кабинет')],
+        [InlineKeyboardButton(text=f'{smile_chair} удалить запись из базы', callback_data='удалить запись')],
+    ]
+    return InlineKeyboardMarkup(start_buttons)
+
+
+def find_work_keyboard(tg_id):
+    if firsttime_user(tg_id, 'cv'):
+        text = f'{smile_write} Приступим!'
+    else:
+        text = f'{smile_write} Моя анкета'
+    find_work_buttons = [
+        [
+            InlineKeyboardButton(text=text, callback_data='Заполнить анкету'),
+            # InlineKeyboardButton(text=f'{smile_look} Смотреть вакансии', callback_data='Смотреть вакансии'),
+        ],
+    ]
+    return InlineKeyboardMarkup(find_work_buttons)
 
 
 # CV_KEYBOARDS
@@ -556,11 +588,18 @@ def back_payment_keyboard(amount):
     return InlineKeyboardMarkup(back_button)
 
 
-def after_success_keyboard():
+def after_success_keyboard(payment_from):
     after_success_button = [
         [InlineKeyboardButton(text=f'{smile_card} Пополнить баланс', callback_data='pay_balance')],
-        [InlineKeyboardButton(text=f'{smile_rdy} Просмотр анкет', callback_data='success_forward')]
     ]
+    if payment_from == 'filter':
+        after_success_button.append([
+            InlineKeyboardButton(text=f'{smile_rdy} Просмотр анкет', callback_data='success_to_filter')
+        ])
+    elif payment_from == 'area':
+        after_success_button.append([
+            InlineKeyboardButton(text=f'{smile_back} Назад', callback_data='success_to_area')
+        ])
     return InlineKeyboardMarkup(after_success_button)
 
 
@@ -578,5 +617,6 @@ def personal_area_keyboard():
     personal_area_buttons = [
         [InlineKeyboardButton(text=f'{smile_card} Пополнить баланс', callback_data='pay_balance_area')],
         [InlineKeyboardButton(text=f'{smile_worker_2} Обратиться в поддержку', callback_data='STEP_SUPPORT')],
+        [InlineKeyboardButton(text=f'{smile_back} Назад', callback_data='back_menu')]
     ]
     return InlineKeyboardMarkup(personal_area_buttons)

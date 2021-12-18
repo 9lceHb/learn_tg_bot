@@ -1,5 +1,3 @@
-from typing import Text
-
 import os
 import base64
 from telegram import ParseMode
@@ -23,7 +21,6 @@ from telegram.ext import (
     CallbackQueryHandler,
     CommandHandler,
 )
-from handlers import start
 
 from keyboards import (
     cv_main_keyboard,
@@ -54,9 +51,8 @@ from keyboards import (
     STEP_CONTACT,
     STEP_CV_END
 )
-
-
 dbase = DBase()
+
 
 def print_cv_info(update, context, markup, callback=True):
     tg_id = update.effective_user.id
@@ -138,6 +134,7 @@ input_patterns = (
     f'^{STEP_PHOTO}$'
 )
 
+
 def get_step_text(key, tg_id):
     user = dbase.db_client.users.find_one({'tg_id': tg_id})
     if key == STEP_NAME:
@@ -207,7 +204,7 @@ def get_step_text(key, tg_id):
     elif key == STEP_CONTACT:
         text = f'''
 {show_step_num(tg_id, key)}
-Поделитесь контактным <b>номером телефона</b>, чтобы работодатель мог связаться с Вами. 
+Поделитесь контактным <b>номером телефона</b>, чтобы работодатель мог связаться с Вами.
 '''
         keyboard = contact_keyboard()
     elif key == STEP_PHOTO:
@@ -290,6 +287,7 @@ def get_text_prev(tg_id, key):
         text_prev_step = ('Фото добавлено' if user['cv'].get('photo') else 'Фото не добавлялось')
     return text_prev_step
 
+
 def manage_choosen_button(update, context):
     update.callback_query.answer()
     tg_id = update.effective_user.id
@@ -326,6 +324,7 @@ def cv_start(update, context):
         print_cv_info(update, context, cv_main_keyboard(update, context))
         dbase.save_cv(tg_id, 'current_step', 'STEP_UPDATE_CV')
         return STEP_UPDATE_CV
+
 
 def not_show_cv(update, context):
     update.callback_query.answer()
@@ -403,7 +402,6 @@ def choose_specialisation(update, context):
     else:
         user_specialisation = update.callback_query.data
         dbase.update_specialisation(tg_id, user_specialisation, 'cv')
-        user = dbase.db_client.users.find_one({'tg_id': tg_id})
         text = get_step_text(STEP_SPECIALISATION, tg_id)[0]
         update.callback_query.edit_message_text(
             text=text,
@@ -454,6 +452,7 @@ def choose_schedule(update, context):
         dbase.save_cv(tg_id, 'current_step', 'STEP_UPDATE_CV')
         return STEP_UPDATE_CV
 
+
 def choose_location(update, context):
     user_location = update.message.text
     tg_id = update.effective_user.id
@@ -479,6 +478,7 @@ def choose_location(update, context):
         update.message.reply_text('Один или несколько объектов не распознаны, попробуйте еще раз')
         dbase.save_cv(tg_id, 'current_step', 'STEP_LOCATION')
         return STEP_LOCATION
+
 
 def location_back(update, context):
     update.callback_query.answer()
@@ -524,6 +524,7 @@ def choose_salary(update, context):
         dbase.save_cv(tg_id, 'current_step', 'STEP_UPDATE_CV')
         return STEP_UPDATE_CV
 
+
 def choose_name(update, context):
     user_name = update.message.text
     tg_id = update.effective_user.id
@@ -552,6 +553,7 @@ def choose_name(update, context):
         print_cv_info(update, context, cv_other_keyboard(update, context), callback=False)
         dbase.save_cv(tg_id, 'current_step', 'STEP_UPDATE_CV')
         return STEP_UPDATE_CV
+
 
 def name_back(update, context):
     update.callback_query.answer()
@@ -607,6 +609,7 @@ def choose_age(update, context):
         dbase.save_cv(tg_id, 'current_step', 'STEP_AGE')
         return STEP_AGE
 
+
 def age_back(update, context):
     update.callback_query.answer()
     tg_id = update.effective_user.id
@@ -652,6 +655,7 @@ def choose_education(update, context):
         print_cv_info(update, context, cv_other_keyboard(update, context))
         dbase.save_cv(tg_id, 'current_step', 'STEP_UPDATE_CV')
         return STEP_UPDATE_CV
+
 
 def choose_experience(update, context):
     update.callback_query.answer()
@@ -755,6 +759,7 @@ def photo_pass(update, context):
     dbase.save_cv(tg_id, 'current_step', 'STEP_CONTACT')
     return STEP_CONTACT
 
+
 def get_contact(update, context):
     user_phone = update.message.contact.phone_number
     tg_id = update.effective_user.id
@@ -763,6 +768,7 @@ def get_contact(update, context):
     print_cv_info(update, context, cv_main_keyboard(update, context), callback=False)
     dbase.save_cv(tg_id, 'current_step', 'STEP_UPDATE_CV')
     return STEP_UPDATE_CV
+
 
 def get_contact_fail(update, context):
     tg_id = update.effective_user.id
@@ -774,6 +780,7 @@ def get_contact_fail(update, context):
     )
     dbase.save_cv(tg_id, 'current_step', 'STEP_CONTACT')
     return STEP_CONTACT
+
 
 def show_photo(update, context):
     tg_id = update.effective_user.id
@@ -873,4 +880,3 @@ cv_handler = ConversationHandler(
     ],
     allow_reentry=True
 )
-

@@ -103,3 +103,15 @@ class DBase:
                 {'_id': user['_id']},
                 {'$set': {'filter.specialisation': user_specialisations}}
             )
+
+    def create_issue(self, effective_user, text):
+        now = datetime.datetime.now()
+        issue = {
+            'tg_id': effective_user.id,
+            'first_name': effective_user.first_name,
+            'last_name': effective_user.last_name,
+            'username': effective_user.username,
+            'registration_datetime': now,
+            'issue_text': text,
+        }
+        self.db_client.issues.insert_one(issue)

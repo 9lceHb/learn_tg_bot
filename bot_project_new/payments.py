@@ -15,12 +15,15 @@ from keyboards import (
     show_cv_keyboard,
     back_payment_keyboard,
     after_success_keyboard,
+    personal_area_keyboard,
     STEP_SHOW_CV,
     STEP_INVOICE,
     STEP_PAYMENT_DONE,
     STEP_PRECHECKOUT,
-    STEP_PAYMENT_BACK,
+    STEP_PAYMENT_BACK_FILTER,
+    STEP_PAYMENT_BACK_AREA,
     STEP_AFTER_PAYMENT,
+    STEP_MANAGE_AREA
 )
 
 dbase = DBase()
@@ -28,12 +31,12 @@ dbase = DBase()
 
 def choose_invoice_amount(update, context):
     update.callback_query.answer()
-    if update.callback_query.data == 'payment_back_filter':
-        payment_from = 'filter'
-    elif update.callback_query.data == 'payment_back_area':
-        payment_from = 'area'
+    if update.callback_query.data == 'pay_balance_filter':
+        context.user_data['payment_from'] = 'filter'
+    elif update.callback_query.data == 'pay_balance_area':
+        context.user_data['payment_from'] = 'area'
     text = 'Пожалуйста, выберите сумму для пополнения'
-    reply_markup = choose_amount_keyboard(payment_from)
+    reply_markup = choose_amount_keyboard(context.user_data['payment_from'])
     update.callback_query.edit_message_text(text=text, reply_markup=reply_markup, parse_mode=ParseMode.HTML)
     return STEP_INVOICE
 
@@ -43,11 +46,20 @@ def send_payment_invoice(update, context):
     tg_id = update.effective_user.id
     user = dbase.db_client.users.find_one({'tg_id': tg_id})
     for_show_user_id = user['filter']['show_cv_tg_id']['showed_tg_id']
+    balance = user['balance']
     if update.callback_query.data == 'payment_back_filter':
         text = print_cv(tg_id, for_show_user_id)
         reply_markup = show_cv_keyboard(tg_id)
         update.callback_query.edit_message_text(text=text, reply_markup=reply_markup, parse_mode=ParseMode.HTML)
-        return STEP_PAYMENT_BACK
+        return STEP_PAYMENT_BACK_FILTER
+    elif update.callback_query.data == 'payment_back_area':
+        text = f'''
+Здесь вы можете пополнить баланс, или обратиться в поддержку, по любым вопросам.
+Ваш <b>текущий баланс</b> составляет <b>{balance} рублей</b>.
+'''
+        reply_markup = personal_area_keyboard()
+        update.callback_query.edit_message_text(text=text, reply_markup=reply_markup, parse_mode=ParseMode.HTML)
+        return STEP_PAYMENT_BACK_AREA
     amount = int(update.callback_query.data[0:3])
     chat_id = update.callback_query.message.chat.id
     title = "Пополнение баланса."
@@ -89,7 +101,7 @@ def successful_payment_callback(update, context):
     dbase.db_client.users.update_one({'_id': user['_id']}, {'$set': {'balance': new_balance}})
     dbase.db_client.users.update_one({'_id': user['_id']}, {'$push': {'payments': payment_details}})
     text = f"Платеж успешно зачислен! Ваш текущий баланс составляет {new_balance} рублей!"
-    reply_markup = after_success_keyboard()
+    reply_markup = after_success_keyboard(context.user_data['payment_from'])
     update.message.reply_text(text=text, reply_markup=reply_markup, parse_mode=ParseMode.HTML)
     return STEP_AFTER_PAYMENT
 
@@ -97,7 +109,7 @@ def successful_payment_callback(update, context):
 def payment_invoice_back(update, context):
     update.callback_query.answer()
     text = 'Пожалуйста, выберите сумму для пополнения'
-    reply_markup = choose_amount_keyboard()
+    reply_markup = choose_amount_keyboard(context.user_data['payment_from'])
     chat_id = update.callback_query.message.chat.id
     context.bot.send_message(
         chat_id=chat_id,
@@ -124,14 +136,23 @@ def move_after_payment(update, context):
     tg_id = update.effective_user.id
     user = dbase.db_client.users.find_one({'tg_id': tg_id})
     for_show_user_id = user['filter']['show_cv_tg_id']['showed_tg_id']
-    if update.callback_query.data == 'success_forward':
+    balance = user['balance']
+    if update.callback_query.data == 'success_to_filter':
         text = print_cv(tg_id, for_show_user_id)
         reply_markup = show_cv_keyboard(tg_id)
         update.callback_query.edit_message_text(text=text, reply_markup=reply_markup, parse_mode=ParseMode.HTML)
-        return STEP_PAYMENT_BACK
+        return STEP_PAYMENT_BACK_FILTER
+    elif update.callback_query.data == 'success_to_area':
+        text = f'''
+Здесь вы можете пополнить баланс, или обратиться в поддержку, по любым вопросам.
+Ваш <b>текущий баланс</b> составляет <b>{balance} рублей</b>.
+'''
+        reply_markup = personal_area_keyboard()
+        update.callback_query.edit_message_text(text=text, reply_markup=reply_markup, parse_mode=ParseMode.HTML)
+        return STEP_PAYMENT_BACK_AREA
     else:
         text = 'Пожалуйста, выберите сумму для пополнения'
-        reply_markup = choose_amount_keyboard()
+        reply_markup = choose_amount_keyboard(context.user_data['payment_from'])
         update.callback_query.edit_message_text(text=text, reply_markup=reply_markup, parse_mode=ParseMode.HTML)
         return STEP_INVOICE
 
@@ -140,6 +161,19 @@ pay_balance_patterns = (
     '^' + 'pay_balance_filter' + '$|'
     '^' + 'pay_balance_area' + '$'
 )
+
+
+def payment_fallback(update, context):
+    text = 'Пожалуйста, выберите сумму для пополнения'
+    reply_markup = choose_amount_keyboard(context.user_data['payment_from'])
+    chat_id = update.callback_query.message.chat.id
+    context.bot.send_message(
+        chat_id=chat_id,
+        text=text,
+        reply_markup=reply_markup,
+        parse_mode=ParseMode.HTML
+    )
+    return STEP_INVOICE
 
 
 payment_conv_handler = ConversationHandler(
@@ -156,11 +190,12 @@ payment_conv_handler = ConversationHandler(
         STEP_AFTER_PAYMENT: [CallbackQueryHandler(move_after_payment)]
     },
     fallbacks=[
-        # MessageHandler(Filters.text & (~ Filters.command) | Filters.photo | Filters.video, filter_fallback),
+        MessageHandler(Filters.text & (~ Filters.command) | Filters.photo | Filters.video, payment_fallback),
         # CallbackQueryHandler(end_describing_filter, pattern='^' + str(END) + '$'),
     ],
     map_to_parent={
-        STEP_PAYMENT_BACK: STEP_SHOW_CV
+        STEP_PAYMENT_BACK_FILTER: STEP_SHOW_CV,
+        STEP_PAYMENT_BACK_AREA: STEP_MANAGE_AREA
     },
     allow_reentry=True,
     per_chat=False
