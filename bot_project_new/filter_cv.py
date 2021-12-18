@@ -1,7 +1,6 @@
-from typing import Text
 import base64
 import os
-from telegram import ParseMode, LabeledPrice
+from telegram import ParseMode
 from utils import (
     update_user_location,
     make_station_numbers_set,
@@ -23,8 +22,7 @@ from telegram.ext import (
 from payments import payment_conv_handler
 
 from DbFolder.db_file import DBase
-dbase = DBase()
-from keyboards import(
+from keyboards import (
     filter_main_keyboard,
     filter_speciality_keyboard,
     filter_invite_keyboard,
@@ -50,6 +48,7 @@ from keyboards import(
     STEP_SHOW_CV,
     STEP_FILTER_END,
 )
+dbase = DBase()
 
 
 def print_filter_info(update, context, callback=True):
@@ -96,12 +95,13 @@ def print_filter_info(update, context, callback=True):
     else:
         update.message.reply_text(text=text, reply_markup=reply_markup, parse_mode=ParseMode.HTML)
 
+
 show_cv_patterns = (
-    f'^' + 'show_cv_back' + '$|'
-    f'^' + 'show_cv_next' + '$|'
-    f'^' + 'show_cv_end' + '$|'
-    f'^' + 'Показать анкеты' + '$|'
-    f'^' + 'payment_back_filter' + '$'
+    '^' + 'show_cv_back' + '$|'
+    '^' + 'show_cv_next' + '$|'
+    '^' + 'show_cv_end' + '$|'
+    '^' + 'Показать анкеты' + '$|'
+    '^' + 'payment_back_filter' + '$'
 )
 filter_patterns = (
     f'^{STEP_FILTER_AGE}$|'
@@ -114,6 +114,7 @@ filter_patterns = (
     f'^{STEP_FILTER_EDUCATION}$|'
     f'^{STEP_FILTER_PHOTO}$'
 )
+
 
 def get_filter_text(key, tg_id):
     user = dbase.db_client.users.find_one({'tg_id': tg_id})
@@ -240,6 +241,7 @@ def manage_filter_button(update, context):
     reply_markup = get_filter_text(user_data_key, tg_id)[1]
     update.callback_query.edit_message_text(text=text, reply_markup=reply_markup, parse_mode=ParseMode.HTML)
     return user_data_key
+
 
 def filter_start(update, context):
     update.callback_query.answer()
@@ -407,6 +409,7 @@ def filter_photo(update, context):
     print_filter_info(update, context)
     return STEP_FILTER_MAIN
 
+
 def show_cv_first(update, context):
     update.callback_query.answer()
     current_tg_id = update.effective_user.id
@@ -423,6 +426,7 @@ def show_cv_first(update, context):
     reply_markup = show_cv_keyboard(current_tg_id)
     update.callback_query.edit_message_text(text=text, reply_markup=reply_markup, parse_mode=ParseMode.HTML)
     return STEP_SHOW_CV
+
 
 def show_cv(update, context):
     update.callback_query.answer()
@@ -446,6 +450,7 @@ def show_cv(update, context):
     reply_markup = show_cv_keyboard(current_tg_id)
     update.callback_query.edit_message_text(text=text, reply_markup=reply_markup, parse_mode=ParseMode.HTML)
     return STEP_SHOW_CV
+
 
 def pay_cv(update, context):
     update.callback_query.answer()
@@ -498,6 +503,7 @@ def end_describing_filter(update, context):
     )
     return ConversationHandler.END
 
+
 def filter_fallback(update, context):
     tg_id = update.effective_user.id
     if firsttime_user(tg_id, 'filter'):
@@ -513,6 +519,7 @@ def filter_fallback(update, context):
     else:
         print_filter_info(update, context, callback=False)
         return STEP_FILTER_MAIN
+
 
 filter_handler = ConversationHandler(
     entry_points=[

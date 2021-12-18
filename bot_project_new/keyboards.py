@@ -1,5 +1,3 @@
-from typing import Text
-import requests
 from telegram import (
     InlineKeyboardButton,
     InlineKeyboardMarkup,
@@ -45,8 +43,11 @@ dbase = DBase()
     STEP_AFTER_PAYMENT,
     STEP_PRECHECKOUT,
     STEP_PAYMENT_BACK,
-    STEP_PAYMENTS_END
-) = map(chr, range(35))
+    STEP_PAYMENTS_END,
+    STEP_MANAGE_AREA,
+    STEP_PAY_BALANCE,
+    STEP_SUPPORT,
+) = map(chr, range(38))
 
 smile_speciality = emojize(':memo:', use_aliases=True)
 smile_specialisation = emojize(':microscope:', use_aliases=True)
@@ -70,6 +71,7 @@ smile_4 = None  # emojize(':four:', use_aliases=True)
 smile_5 = None  # emojize(':five:', use_aliases=True)
 smile_pass = emojize(':arrow_right:', use_aliases=True)
 smile_worker = emojize(':construction_worker:', use_aliases=True)
+smile_worker_2 = '👨‍🔧'
 smile_write = emojize(':pencil2:', use_aliases=True)
 smile_up = emojize(':arrow_up:', use_aliases=True)
 smile_card = emojize(':credit_card:', use_aliases=True)
@@ -200,6 +202,7 @@ def schedule_keyboard(tg_id):
         schedule_buttons.append([InlineKeyboardButton(text=text_back, callback_data='back_cv')])
     return InlineKeyboardMarkup(schedule_buttons)
 
+
 def salary_keyboard(tg_id):
     user = dbase.db_client.users.find_one({'tg_id': tg_id})
     if user['cv']['speciality'] != 'Стоматолог':
@@ -218,6 +221,7 @@ def salary_keyboard(tg_id):
         text_back = f'{smile_back} Назад'
         salary_buttons.append([InlineKeyboardButton(text=text_back, callback_data='back_cv')])
     return InlineKeyboardMarkup(salary_buttons)
+
 
 def education_keyboard(tg_id):
     user = dbase.db_client.users.find_one({'tg_id': tg_id})
@@ -278,6 +282,7 @@ def experience_keyboard(tg_id):
         experience_buttons.append([InlineKeyboardButton(text=text_back, callback_data='back_cv')])
     return InlineKeyboardMarkup(experience_buttons)
 
+
 def photo_pass_keyboard(tg_id):
     text = f'{smile_pass} Пропустить (можно добавить позднее)'
     text_back = f'{smile_back} Назад'
@@ -289,6 +294,7 @@ def photo_pass_keyboard(tg_id):
         photo_button.append([InlineKeyboardButton(text=text_back, callback_data='back_cv')])
     return InlineKeyboardMarkup(photo_button)
 
+
 def back_keyboard():
     text_back = f'{smile_back} Назад'
     back_button = [
@@ -296,13 +302,13 @@ def back_keyboard():
     ]
     return InlineKeyboardMarkup(back_button)
 
+
 def contact_keyboard():
     button = KeyboardButton('Поделиться номером телефона', request_contact=True)
     return ReplyKeyboardMarkup([[button]], one_time_keyboard=True, resize_keyboard=True)
 
 
 # Filter_keyboards
-
 def filter_main_keyboard(update, context):
     # основная клавиатура для анкеты
     tg_id = update.effective_user.id
@@ -350,6 +356,7 @@ def filter_speciality_keyboard():
         [InlineKeyboardButton(text='Ассистент', callback_data='Ассистент')]
     ]
     return InlineKeyboardMarkup(filter_speciality_buttons)
+
 
 def filter_invite_keyboard():
     filter_invite_buttons = [
@@ -402,6 +409,7 @@ def filter_schedule_keyboard(tg_id):
         ]
     return InlineKeyboardMarkup(filter_schedule_buttons)
 
+
 def filter_salary_keyboard(tg_id):
     user = dbase.db_client.users.find_one({'tg_id': tg_id})
     if user['filter']['speciality'] != 'Стоматолог':
@@ -417,6 +425,7 @@ def filter_salary_keyboard(tg_id):
             [InlineKeyboardButton(text=f'{smile_salary} от 80000', callback_data='от 80000 руб./2')],
         ]
     return InlineKeyboardMarkup(filter_salary_buttons)
+
 
 def filter_education_keyboard(tg_id):
     user = dbase.db_client.users.find_one({'tg_id': tg_id})
@@ -498,7 +507,7 @@ def show_cv_keyboard(tg_id):
             InlineKeyboardButton(text=f'{smile_salary} Оплатить анкету', callback_data='pay_cv')
         ],
         [
-            InlineKeyboardButton(text=f'{smile_card} Пополнить баланс', callback_data='pay_balance')
+            InlineKeyboardButton(text=f'{smile_card} Пополнить баланс', callback_data='pay_balance_filter')
         ],
     ]
     tg_id_list = user['filter']['show_cv_tg_id']['tg_id_list']
@@ -519,16 +528,24 @@ def show_cv_keyboard(tg_id):
         show_cv_buttons[0].pop(-1)
     return InlineKeyboardMarkup(show_cv_buttons)
 
-#Payments_keyboards
 
-def choose_amount_keyboard():
+# Payments_keyboards
+def choose_amount_keyboard(payment_from):
     choose_amount_buttons = [
         [InlineKeyboardButton(text='100 рублей', callback_data='100 рублей')],
         [InlineKeyboardButton(text='300 рублей', callback_data='300 рублей')],
         [InlineKeyboardButton(text='500 рублей', callback_data='500 рублей')],
-        [InlineKeyboardButton(text=f'{smile_back} Назад', callback_data='payment_back_filter')]
     ]
+    if payment_from == 'filter':
+        choose_amount_buttons.append([
+            InlineKeyboardButton(text=f'{smile_back} Назад', callback_data='payment_back_filter')
+        ])
+    elif payment_from == 'area':
+        choose_amount_buttons.append([
+            InlineKeyboardButton(text=f'{smile_back} Назад', callback_data='payment_back_area')
+        ])
     return InlineKeyboardMarkup(choose_amount_buttons)
+
 
 def back_payment_keyboard(amount):
     text_back = f'{smile_back} Назад'
@@ -546,9 +563,20 @@ def after_success_keyboard():
     ]
     return InlineKeyboardMarkup(after_success_button)
 
+
 def pay_cv_fail_keyboard():
     pay_cv_fail_button = [
-        [InlineKeyboardButton(text=f'{smile_card} Пополнить баланс', callback_data='pay_balance')],
+        [InlineKeyboardButton(text=f'{smile_card} Пополнить баланс', callback_data='pay_balance_filter')],
         [InlineKeyboardButton(text=f'{smile_back} Просмотр анкет', callback_data='Показать анкеты')]
     ]
     return InlineKeyboardMarkup(pay_cv_fail_button)
+
+
+# Personal area keybooards
+
+def personal_area_keyboard():
+    personal_area_buttons = [
+        [InlineKeyboardButton(text=f'{smile_card} Пополнить баланс', callback_data='pay_balance_area')],
+        [InlineKeyboardButton(text=f'{smile_worker_2} Обратиться в поддержку', callback_data='STEP_SUPPORT')],
+    ]
+    return InlineKeyboardMarkup(personal_area_buttons)

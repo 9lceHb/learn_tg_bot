@@ -15,6 +15,7 @@ model_safe = 'e9576d86d2004ed1a38ba0cf39ecb4b1'
 
 dbase = DBase()
 
+
 def make_photo_path(photo, update, context):
     tg_id = update.effective_user.id
     user_photo = context.bot.getFile(photo.file_id)
@@ -22,6 +23,7 @@ def make_photo_path(photo, update, context):
     file_path = os.path.join('downloads', f'{tg_id}', f'{photo.file_id}.jpg')
     user_photo.download(file_path)
     return file_path
+
 
 # Функция проверяет что на картинке человек и нет контента для взрослых
 def is_human_and_sfw(file_name):
@@ -70,10 +72,12 @@ def make_location_file():
     with open('locations.json', 'w', encoding='utf-8') as f:
         json.dump(response, f, ensure_ascii=False, indent=4)
 
+
 def clear_photo(tg_id):
     files = os.listdir(path=f'downloads/{tg_id}/')
     for file in files:
         os.remove(f'downloads/{tg_id}/{file}')
+
 
 # Преобразуем пользовательскую локацию в структурированный формат
 def update_user_location(user_location):
@@ -119,6 +123,7 @@ def update_user_location(user_location):
         if marker == 0:
             return False
     return user_location
+
 
 def find_firstname(name):
     with open('russian_names.json', encoding='utf-8-sig') as f:
@@ -177,6 +182,7 @@ def print_location(tg_id, cv_or_filter):
     text = AdmArea_text + District_text + Station_text + Line_text
     return text
 
+
 def firsttime_user(tg_id, cv_or_filter):
     user = dbase.db_client.users.find_one({'tg_id': tg_id})
     if user[cv_or_filter]['first_time']:
@@ -192,6 +198,7 @@ def print_specialisation(tg_id, cv_or_filter):
     else:
         specialisation = ', '.join(user[cv_or_filter]['specialisation'])
     return specialisation
+
 
 def print_filter_age(tg_id):
     user = dbase.db_client.users.find_one({'tg_id': tg_id})
@@ -215,7 +222,7 @@ def print_cv(main_tg_id, tg_id):
 '''
     if (user['cv'].get('photo') and paid is True):
         photo_text = 'Чтобы посмотреть фотографию, нажмите /photo'
-    elif (user['cv'].get('photo') and  paid is False):
+    elif (user['cv'].get('photo') and paid is False):
         photo_text = 'Для просмотра необходимо оплатить анкету'
     else:
         photo_text = 'Фото не добавлялось'

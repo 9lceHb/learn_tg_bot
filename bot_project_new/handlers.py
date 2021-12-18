@@ -1,9 +1,10 @@
 from telegram import ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
 from utils import firsttime_user
 from DbFolder.db_file import DBase
-from telegram.ext import ConversationHandler
-dbase = DBase()
 from emoji import emojize
+
+dbase = DBase()
+
 
 def start_keyboard():
     smile_work = emojize(':hospital:', use_aliases=True)
@@ -12,6 +13,7 @@ def start_keyboard():
     start_buttons = [
         [InlineKeyboardButton(text=f'{smile_work} Найти работу', callback_data='Найти работу')],
         [InlineKeyboardButton(text=f'{smile_worker} Найти сотрудника', callback_data='Найти сотрудника')],
+        [InlineKeyboardButton(text=f'{smile_worker} Личный кабинет', callback_data='Личный кабинет')],
         [InlineKeyboardButton(text=f'{smile_chair} удалить запись из базы', callback_data='удалить запись')],
     ]
     return InlineKeyboardMarkup(start_buttons)
@@ -19,7 +21,7 @@ def start_keyboard():
 
 def find_work_keyboard(tg_id):
     smile_write = emojize(':pencil2:', use_aliases=True)
-    smile_look = emojize(':page_with_curl:', use_aliases=True)
+    # smile_look = emojize(':page_with_curl:', use_aliases=True)
     if firsttime_user(tg_id, 'cv'):
         text = f'{smile_write} Приступим!'
     else:
@@ -32,6 +34,7 @@ def find_work_keyboard(tg_id):
     ]
     return InlineKeyboardMarkup(find_work_buttons)
 
+
 # Обработка стартового хендлера (приветствие)
 def start(update, context):
     dbase.get_or_create_user(update.effective_user)
@@ -42,6 +45,7 @@ def start(update, context):
 Чем я могу быть Вам полезен?
 '''
     update.message.reply_text(text=text, reply_markup=reply_markup)
+
 
 def delete_from_base(update, context):
     tg_id = update.effective_user.id
@@ -75,7 +79,6 @@ def find_work(update, context):
         text = '''
 Здесь Вы можете отредактировать свою анкету, или удалить ее из поиска.
 '''
-        
     update.callback_query.edit_message_text(text=text, reply_markup=reply_markup)
 
 

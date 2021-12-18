@@ -5,14 +5,11 @@ from telegram.ext import (
     Filters,
     ConversationHandler,
     CallbackQueryHandler,
-    CommandHandler,
     PreCheckoutQueryHandler
 )
-import pprint
 import datetime
 from utils import print_cv
 from DbFolder.db_file import DBase
-dbase = DBase()
 from keyboards import (
     choose_amount_keyboard,
     show_cv_keyboard,
@@ -24,14 +21,19 @@ from keyboards import (
     STEP_PRECHECKOUT,
     STEP_PAYMENT_BACK,
     STEP_AFTER_PAYMENT,
-    STEP_PAYMENTS_END,
 )
+
+dbase = DBase()
 
 
 def choose_invoice_amount(update, context):
     update.callback_query.answer()
+    if update.callback_query.data == 'payment_back_filter':
+        payment_from = 'filter'
+    elif update.callback_query.data == 'payment_back_area':
+        payment_from = 'area'
     text = 'Пожалуйста, выберите сумму для пополнения'
-    reply_markup = choose_amount_keyboard()
+    reply_markup = choose_amount_keyboard(payment_from)
     update.callback_query.edit_message_text(text=text, reply_markup=reply_markup, parse_mode=ParseMode.HTML)
     return STEP_INVOICE
 
@@ -105,6 +107,7 @@ def payment_invoice_back(update, context):
     )
     return STEP_INVOICE
 
+
 def precheckout_callback(update, context):
     query = update.pre_checkout_query
     # check the payload, is this from your bot?
@@ -114,6 +117,7 @@ def precheckout_callback(update, context):
         query.answer(ok=True)
     return STEP_PAYMENT_DONE
     # выдавать что то по таймауту?
+
 
 def move_after_payment(update, context):
     update.callback_query.answer()
@@ -131,9 +135,16 @@ def move_after_payment(update, context):
         update.callback_query.edit_message_text(text=text, reply_markup=reply_markup, parse_mode=ParseMode.HTML)
         return STEP_INVOICE
 
+
+pay_balance_patterns = (
+    '^' + 'pay_balance_filter' + '$|'
+    '^' + 'pay_balance_area' + '$'
+)
+
+
 payment_conv_handler = ConversationHandler(
     entry_points=[
-        CallbackQueryHandler(choose_invoice_amount, pattern='^' + 'pay_balance' + '$'),
+        CallbackQueryHandler(choose_invoice_amount, pattern=pay_balance_patterns),
     ],
     states={
         STEP_INVOICE: [CallbackQueryHandler(send_payment_invoice)],
@@ -145,8 +156,8 @@ payment_conv_handler = ConversationHandler(
         STEP_AFTER_PAYMENT: [CallbackQueryHandler(move_after_payment)]
     },
     fallbacks=[
-        #MessageHandler(Filters.text & (~ Filters.command) | Filters.photo | Filters.video, filter_fallback),
-        #CallbackQueryHandler(end_describing_filter, pattern='^' + str(END) + '$'),
+        # MessageHandler(Filters.text & (~ Filters.command) | Filters.photo | Filters.video, filter_fallback),
+        # CallbackQueryHandler(end_describing_filter, pattern='^' + str(END) + '$'),
     ],
     map_to_parent={
         STEP_PAYMENT_BACK: STEP_SHOW_CV
@@ -154,8 +165,3 @@ payment_conv_handler = ConversationHandler(
     allow_reentry=True,
     per_chat=False
 )
-
-
-
-
-

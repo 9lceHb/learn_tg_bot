@@ -11,14 +11,14 @@ from telegram.ext import (
 from get_cv import cv_handler
 
 from filter_cv import filter_handler
-
+from personal_area import personal_area_handler
 
 from handlers import (
     find_work,
     message_if_wrong,
     start,
-    find_worker,
-    delete_from_base
+    # find_worker,
+    delete_from_base,
 )
 
 
@@ -46,6 +46,7 @@ def main() -> None:
     dp.add_handler(CallbackQueryHandler(delete_from_base, pattern='^' + 'удалить запись' + '$'))
     dp.add_handler(cv_handler)
     dp.add_handler(filter_handler)
+    dp.add_handler(personal_area_handler)
     dp.add_handler(MessageHandler(Filters.text | Filters.photo, message_if_wrong))
     mybot.start_polling()
     mybot.idle()
