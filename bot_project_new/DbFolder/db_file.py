@@ -1,5 +1,6 @@
 from pymongo import MongoClient
 import settings
+import datetime
 
 
 class DBase:
@@ -13,16 +14,24 @@ class DBase:
         Создание пользователя в базе users, подтягивание информации из TG.
         """
         user = self.db_client.users.find_one({'tg_id': effective_user.id})
+        now = datetime.datetime.now()
         if not user:
             user = {
                 'tg_id': effective_user.id,
                 'first_name': effective_user.first_name,
                 'last_name': effective_user.last_name,
                 'username': effective_user.username,
-                'cv': {'show_cv': True, 'specialisation': [], 'first_time': True},
+                'registration_datetime': now,
+                'last_usetime': now,
+                'balance': 0,
+                'paid_cv': [],
+                'payments': [],
+                'cv': {'show_cv': False, 'specialisation': [], 'first_time': True},
                 'filter': {'specialisation': [], 'first_time': True}
             }
             self.db_client.users.insert_one(user)
+        else:
+            self.db_client.users.update_one({'_id': user['_id']}, {'$set': {'last_usetime': now}})
         return user
 
     def save_cv(self, user_id, cv_key, cv_value):
@@ -94,3 +103,15 @@ class DBase:
                 {'_id': user['_id']},
                 {'$set': {'filter.specialisation': user_specialisations}}
             )
+
+    def create_issue(self, effective_user, text):
+        now = datetime.datetime.now()
+        issue = {
+            'tg_id': effective_user.id,
+            'first_name': effective_user.first_name,
+            'last_name': effective_user.last_name,
+            'username': effective_user.username,
+            'registration_datetime': now,
+            'issue_text': text,
+        }
+        self.db_client.issues.insert_one(issue)

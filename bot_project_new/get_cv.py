@@ -1,5 +1,3 @@
-from typing import Text
-
 import os
 import base64
 from telegram import ParseMode
@@ -11,7 +9,8 @@ from utils import (
     print_location,
     firsttime_user,
     print_specialisation,
-    clear_photo
+    clear_photo,
+    find_firstname
 )
 from DbFolder.db_file import DBase
 from handlers import start_keyboard
@@ -22,9 +21,8 @@ from telegram.ext import (
     CallbackQueryHandler,
     CommandHandler,
 )
-from handlers import start
 
-from cv_keyboards import (
+from keyboards import (
     cv_main_keyboard,
     cv_other_keyboard,
     speciality_keyboard,
@@ -35,6 +33,7 @@ from cv_keyboards import (
     experience_keyboard,
     photo_pass_keyboard,
     back_keyboard,
+    contact_keyboard,
     STEP_NAME,
     STEP_AGE,
     STEP_EXPERIENCE,
@@ -49,11 +48,11 @@ from cv_keyboards import (
     STEP_SALARY,
     STEP_EDUCATION,
     STEP_BACK,
-    END
+    STEP_CONTACT,
+    STEP_CV_END
 )
-
-
 dbase = DBase()
+
 
 def print_cv_info(update, context, markup, callback=True):
     tg_id = update.effective_user.id
@@ -68,7 +67,7 @@ def print_cv_info(update, context, markup, callback=True):
 '''
     else:
         firsttime_text = ''
-    if user['cv']['speciality'] == 'Врач':
+    if user['cv']['speciality'] == 'Стоматолог':
         specialisation_text = f'''\n<b>Специализация:</b> {print_specialisation(tg_id, 'cv')}'''
         education_text = ''
     else:
@@ -78,6 +77,7 @@ def print_cv_info(update, context, markup, callback=True):
             if user['cv'].get('education')
             else 'Значение не установлено'}'''
         )
+    user = dbase.db_client.users.find_one({'tg_id': tg_id})
     text = f'''
 Давайте посмотрим на Вашу анкету! 😌
 В таком виде ее увидит работодатель.
@@ -101,6 +101,9 @@ def print_cv_info(update, context, markup, callback=True):
         if user['cv'].get('salary')
         else 'Значение не установлено'}
 <b>Предпочитительное место работы:</b>\n{print_location(tg_id, 'cv')}
+<b>Номер телефона:</b> {user['cv']['phone']
+        if user['cv'].get('phone')
+        else 'Значение не установлено'}
 <b>Фото:</b> {'Чтобы посмотреть фотографию, нажмите /photo'
         if user['cv'].get('photo')
         else 'Фото не добавлялось'}
@@ -127,8 +130,10 @@ input_patterns = (
     f'^{STEP_SALARY}$|'
     f'^{STEP_EXPERIENCE}$|'
     f'^{STEP_EDUCATION}$|'
+    f'^{STEP_CONTACT}$|'
     f'^{STEP_PHOTO}$'
 )
+
 
 def get_step_text(key, tg_id):
     user = dbase.db_client.users.find_one({'tg_id': tg_id})
@@ -173,7 +178,7 @@ def get_step_text(key, tg_id):
 '''
         keyboard = schedule_keyboard(tg_id)
     elif key == STEP_SALARY:
-        if user['cv']['speciality'] != 'Врач':
+        if user['cv']['speciality'] != 'Стоматолог':
             text = f'''
 {show_step_num(tg_id, key)}
 Выберите <b>минимальную оплату</b> за смену(полдня, 6 - 8 часов).
@@ -196,6 +201,12 @@ def get_step_text(key, tg_id):
 Выберите Ваш <b>опыт работы</b>.
 '''
         keyboard = experience_keyboard(tg_id)
+    elif key == STEP_CONTACT:
+        text = f'''
+{show_step_num(tg_id, key)}
+Поделитесь контактным <b>номером телефона</b>, чтобы работодатель мог связаться с Вами.
+'''
+        keyboard = contact_keyboard()
     elif key == STEP_PHOTO:
         text = f'''
 {show_step_num(tg_id, key)}
@@ -212,44 +223,29 @@ def get_step_text(key, tg_id):
 
 def show_step_num(tg_id, key):
     user = dbase.db_client.users.find_one({'tg_id': tg_id})
+    step_num_dict = {
+                STEP_SPECIALITY: [1, 1],
+                STEP_SPECIALISATION: [2, 2],
+                STEP_SCHEDULE: [3, 2],
+                STEP_LOCATION: [4, 3],
+                STEP_SALARY: [5, 4],
+                STEP_NAME: [6, 5],
+                STEP_AGE: [7, 6],
+                STEP_EDUCATION: [7, 7],
+                STEP_EXPERIENCE: [8, 8],
+                STEP_PHOTO: [9, 9],
+                STEP_CONTACT: [10, 10],
+            }
+    if user['cv'].get('speciality'):
+        if user['cv']['speciality'] == 'Стоматолог':
+            current_step_num = step_num_dict[key][0]
+        else:
+            current_step_num = step_num_dict[key][1]
+    else:
+        current_step_num = 1
+    text_prev_step = get_text_prev(tg_id, key)
     if firsttime_user(tg_id, 'cv'):
         max_step = 10
-        if key == STEP_SPECIALITY:
-            current_step_num = 1
-            text_prev_step = ''
-        elif key == STEP_SPECIALISATION:
-            current_step_num = 2
-            text_prev_step = f"Выбранная Вами специальность: {user['cv']['speciality']}"
-        elif key == STEP_SCHEDULE:
-            current_step_num = 3
-            if user['cv']['speciality'] == 'Врач':
-                text_prev_step = f"Выбранная Вами специализация: {print_specialisation(tg_id, 'cv')}"
-            else:
-                text_prev_step = f"Выбранная Вами специальность: {user['cv']['speciality']}"
-        elif key == STEP_LOCATION:
-            current_step_num = 4
-            text_prev_step = f"Выбранный Вами график: {user['cv']['schedule']}"
-        elif key == STEP_SALARY:
-            current_step_num = 5
-            text_prev_step = f"Предпочитительное место работы:\n{print_location(tg_id, 'cv')}"
-        elif key == STEP_NAME:
-            current_step_num = 6
-            text_prev_step = f"Выбранная Вами минимальная зарплата: {user['cv']['salary']}"
-        elif key == STEP_AGE:
-            current_step_num = 7
-            text_prev_step = f"Введенные Вами ФИО: {user['cv']['name']}"
-        elif key == STEP_EDUCATION:
-            current_step_num = 8
-            text_prev_step = f"Введенный Вами возраст: {user['cv']['age']}"
-        elif key == STEP_EXPERIENCE:
-            current_step_num = 9
-            if user['cv']['speciality'] == 'Врач':
-                text_prev_step = f"Введенные Вами ФИО: {user['cv']['name']}"
-            else:
-                text_prev_step = f"Выбранное Вами образование: {user['cv']['education']}"
-        else:
-            current_step_num = 10
-            text_prev_step = f"Выбранный вами опыт: {user['cv']['experience']}"
         text = f'''
 <b>Шаг:</b> {current_step_num} из {max_step}
 {text_prev_step}
@@ -257,6 +253,39 @@ def show_step_num(tg_id, key):
     else:
         return ''
     return text
+
+
+def get_text_prev(tg_id, key):
+    user = dbase.db_client.users.find_one({'tg_id': tg_id})
+    if key == STEP_SPECIALITY:
+        text_prev_step = '<b>Для выхода из заполнения анкеты, Вы в любой момент можете ввести команду /stop</b>'
+    elif key == STEP_SPECIALISATION:
+        text_prev_step = f"Выбранная Вами специальность: {user['cv']['speciality']}"
+    elif key == STEP_SCHEDULE:
+        if user['cv']['speciality'] == 'Стоматолог':
+            text_prev_step = f"Выбранная Вами специализация: {print_specialisation(tg_id, 'cv')}"
+        else:
+            text_prev_step = f"Выбранная Вами специальность: {user['cv']['speciality']}"
+    elif key == STEP_LOCATION:
+        text_prev_step = f"Выбранный Вами график: {user['cv']['schedule']}"
+    elif key == STEP_SALARY:
+        text_prev_step = f"Предпочитительное место работы:\n{print_location(tg_id, 'cv')}"
+    elif key == STEP_NAME:
+        text_prev_step = f"Выбранная Вами минимальная зарплата: {user['cv']['salary']}"
+    elif key == STEP_AGE:
+        text_prev_step = f"Введенные Вами ФИО: {user['cv']['name']}"
+    elif key == STEP_EDUCATION:
+        text_prev_step = f"Введенный Вами возраст: {user['cv']['age']}"
+    elif key == STEP_EXPERIENCE:
+        if user['cv']['speciality'] == 'Стоматолог':
+            text_prev_step = f"Введенные Вами ФИО: {user['cv']['name']}"
+        else:
+            text_prev_step = f"Выбранное Вами образование: {user['cv']['education']}"
+    elif key == STEP_PHOTO:
+        text_prev_step = f"Выбранный вами опыт: {user['cv']['experience']}"
+    elif key == STEP_CONTACT:
+        text_prev_step = ('Фото добавлено' if user['cv'].get('photo') else 'Фото не добавлялось')
+    return text_prev_step
 
 
 def manage_choosen_button(update, context):
@@ -296,6 +325,7 @@ def cv_start(update, context):
         dbase.save_cv(tg_id, 'current_step', 'STEP_UPDATE_CV')
         return STEP_UPDATE_CV
 
+
 def not_show_cv(update, context):
     update.callback_query.answer()
     tg_id = update.effective_user.id
@@ -319,7 +349,7 @@ def choose_speciality(update, context):
         dbase.clear_cv(tg_id)
     dbase.save_cv(tg_id, 'speciality', user_speciality)
     if firsttime_user(tg_id, 'cv'):
-        if user_speciality == 'Врач':
+        if user_speciality == 'Стоматолог':
             text = get_step_text(STEP_SPECIALISATION, tg_id)[0]
             update.callback_query.edit_message_text(
                 text=text,
@@ -372,7 +402,6 @@ def choose_specialisation(update, context):
     else:
         user_specialisation = update.callback_query.data
         dbase.update_specialisation(tg_id, user_specialisation, 'cv')
-        user = dbase.db_client.users.find_one({'tg_id': tg_id})
         text = get_step_text(STEP_SPECIALISATION, tg_id)[0]
         update.callback_query.edit_message_text(
             text=text,
@@ -388,7 +417,7 @@ def choose_schedule(update, context):
     tg_id = update.effective_user.id
     user = dbase.db_client.users.find_one({'tg_id': tg_id})
     if update.callback_query.data == 'back_cv':
-        if user['cv']['speciality'] == 'Врач':
+        if user['cv']['speciality'] == 'Стоматолог':
             text = get_step_text(STEP_SPECIALISATION, tg_id)[0]
             update.callback_query.edit_message_text(
                 text=text,
@@ -423,6 +452,7 @@ def choose_schedule(update, context):
         dbase.save_cv(tg_id, 'current_step', 'STEP_UPDATE_CV')
         return STEP_UPDATE_CV
 
+
 def choose_location(update, context):
     user_location = update.message.text
     tg_id = update.effective_user.id
@@ -448,6 +478,7 @@ def choose_location(update, context):
         update.message.reply_text('Один или несколько объектов не распознаны, попробуйте еще раз')
         dbase.save_cv(tg_id, 'current_step', 'STEP_LOCATION')
         return STEP_LOCATION
+
 
 def location_back(update, context):
     update.callback_query.answer()
@@ -493,6 +524,7 @@ def choose_salary(update, context):
         dbase.save_cv(tg_id, 'current_step', 'STEP_UPDATE_CV')
         return STEP_UPDATE_CV
 
+
 def choose_name(update, context):
     user_name = update.message.text
     tg_id = update.effective_user.id
@@ -500,8 +532,14 @@ def choose_name(update, context):
         update.message.reply_text('Пожалуйста, введите ФИО(не менее 2-х слов)')
         dbase.save_cv(tg_id, 'current_step', 'STEP_NAME')
         return STEP_NAME
-    else:
+    first_name = find_firstname(user_name)
+    if first_name:
         dbase.save_cv(tg_id, 'name', user_name)
+        dbase.save_cv(tg_id, 'first_name', first_name)
+    else:
+        update.message.reply_text('Ваше Имя не найдено в базе имен😢, пожалуйста, введите Ваше настоящее Имя!')
+        dbase.save_cv(tg_id, 'current_step', 'STEP_NAME')
+        return STEP_NAME
     if firsttime_user(update.effective_user.id, 'cv'):
         text = get_step_text(STEP_AGE, tg_id)[0]
         update.message.reply_text(
@@ -515,6 +553,7 @@ def choose_name(update, context):
         print_cv_info(update, context, cv_other_keyboard(update, context), callback=False)
         dbase.save_cv(tg_id, 'current_step', 'STEP_UPDATE_CV')
         return STEP_UPDATE_CV
+
 
 def name_back(update, context):
     update.callback_query.answer()
@@ -539,7 +578,7 @@ def choose_age(update, context):
             if firsttime_user(update.effective_user.id, 'cv'):
                 user = dbase.db_client.users.find_one({'tg_id': tg_id})
                 user_speciality = user['cv']['speciality']
-                if user_speciality == 'Врач':
+                if user_speciality == 'Стоматолог':
                     text = get_step_text(STEP_EXPERIENCE, tg_id)[0]
                     update.message.reply_text(
                         text=text,
@@ -569,6 +608,7 @@ def choose_age(update, context):
         update.message.reply_text('Пожалуйста введите корректный возраст')
         dbase.save_cv(tg_id, 'current_step', 'STEP_AGE')
         return STEP_AGE
+
 
 def age_back(update, context):
     update.callback_query.answer()
@@ -616,12 +656,13 @@ def choose_education(update, context):
         dbase.save_cv(tg_id, 'current_step', 'STEP_UPDATE_CV')
         return STEP_UPDATE_CV
 
+
 def choose_experience(update, context):
     update.callback_query.answer()
     tg_id = update.effective_user.id
     user = dbase.db_client.users.find_one({'tg_id': tg_id})
     if update.callback_query.data == 'back_cv':
-        if user['cv']['speciality'] == 'Врач':
+        if user['cv']['speciality'] == 'Стоматолог':
             text = get_step_text(STEP_AGE, tg_id)[0]
             update.callback_query.edit_message_text(
                 text=text,
@@ -673,12 +714,19 @@ def check_user_photo(update, context):
             image_str = base64.b64encode(imageFile.read())
         clear_photo(tg_id)
         dbase.save_cv(tg_id, 'photo', image_str)
-        dbase.save_cv(tg_id, 'current_step', 'STEP_UPDATE_CV')
         if firsttime_user(tg_id, 'cv'):
-            print_cv_info(update, context, cv_main_keyboard(update, context), callback=False)
+            text = get_step_text(STEP_CONTACT, tg_id)[0]
+            update.message.reply_text(
+                text=text,
+                reply_markup=contact_keyboard(),
+                parse_mode=ParseMode.HTML
+            )
+            dbase.save_cv(tg_id, 'current_step', 'STEP_CONTACT')
+            return STEP_CONTACT
         else:
-            print_cv_info(update, context, cv_other_keyboard(update, context), callback=False)
-        return STEP_UPDATE_CV
+            print_cv_info(update, context, cv_main_keyboard(update, context), callback=False)
+            dbase.save_cv(tg_id, 'current_step', 'STEP_UPDATE_CV')
+            return STEP_UPDATE_CV
     else:
         clear_photo(tg_id)
         update.message.reply_text('Фото не подхоидт, выберите другое', reply_markup=photo_pass_keyboard(tg_id))
@@ -700,9 +748,38 @@ def photo_pass(update, context):
         return STEP_EXPERIENCE
     user_photo = False
     dbase.save_cv(tg_id, 'photo', user_photo)
-    print_cv_info(update, context, cv_main_keyboard(update, context))
+    chat_id = update.callback_query.message.chat.id
+    text = get_step_text(STEP_CONTACT, tg_id)[0]
+    context.bot.send_message(
+        chat_id=chat_id,
+        text=text,
+        reply_markup=contact_keyboard(),
+        parse_mode=ParseMode.HTML
+    )
+    dbase.save_cv(tg_id, 'current_step', 'STEP_CONTACT')
+    return STEP_CONTACT
+
+
+def get_contact(update, context):
+    user_phone = update.message.contact.phone_number
+    tg_id = update.effective_user.id
+    dbase.save_cv(tg_id, 'phone', user_phone)
+    dbase.save_cv(tg_id, 'show_cv', True)
+    print_cv_info(update, context, cv_main_keyboard(update, context), callback=False)
     dbase.save_cv(tg_id, 'current_step', 'STEP_UPDATE_CV')
     return STEP_UPDATE_CV
+
+
+def get_contact_fail(update, context):
+    tg_id = update.effective_user.id
+    text = 'Чтобы поделиться совим номером телефона, пожалуйста нажмите кнопку на клавиатуре'
+    update.message.reply_text(
+        text=text,
+        reply_markup=contact_keyboard(),
+        parse_mode=ParseMode.HTML
+    )
+    dbase.save_cv(tg_id, 'current_step', 'STEP_CONTACT')
+    return STEP_CONTACT
 
 
 def show_photo(update, context):
@@ -720,12 +797,12 @@ def show_photo(update, context):
     print_cv_info(update, context, cv_main_keyboard(update, context), callback=False)
     return STEP_UPDATE_CV
 
-# Функция дает ответ если пользователь в анкете не выбрал поле
-def cv_fallback(update, context):
-    tg_id = update.effective_user.id
-    print_cv_info(update, context, cv_main_keyboard(update, context), callback=False)
-    dbase.save_cv(tg_id, 'current_step', 'STEP_UPDATE_CV')
-    return STEP_UPDATE_CV
+
+def cancel_conversation(update, context):
+    reply_markup = start_keyboard()
+    text = 'Вы прервали редактирование анкеты, выберите пункт меню.'
+    update.message.reply_text(text=text, reply_markup=reply_markup)
+    return ConversationHandler.END
 
 
 # Завершение анкеты выход из ConversationHandler
@@ -739,6 +816,24 @@ def end_describing_cv(update, context):
     )
     return ConversationHandler.END
 
+
+def cv_fallback(update, context):
+    tg_id = update.effective_user.id
+    if firsttime_user(tg_id, 'cv'):
+        text = get_step_text(STEP_SPECIALITY, tg_id)[0]
+        update.message.reply_text(
+            text=text,
+            reply_markup=speciality_keyboard(),
+            parse_mode=ParseMode.HTML
+        )
+        dbase.save_cv(tg_id, 'current_step', 'STEP_SPECIALITY')
+        return STEP_SPECIALITY
+    else:
+        print_cv_info(update, context, cv_main_keyboard(update, context), callback=False)
+        dbase.save_cv(tg_id, 'current_step', 'STEP_UPDATE_CV')
+        return STEP_UPDATE_CV
+
+
 cv_handler = ConversationHandler(
     entry_points=[
         CallbackQueryHandler(cv_start, pattern='^' + 'Заполнить анкету' + '$')
@@ -748,16 +843,16 @@ cv_handler = ConversationHandler(
         STEP_SPECIALISATION: [CallbackQueryHandler(choose_specialisation)],
         STEP_SCHEDULE: [CallbackQueryHandler(choose_schedule)],
         STEP_LOCATION: [
-            MessageHandler(Filters.text, choose_location),
+            MessageHandler(Filters.text & (~ Filters.command), choose_location),
             CallbackQueryHandler(location_back),
         ],
         STEP_SALARY: [CallbackQueryHandler(choose_salary)],
         STEP_NAME: [
-            MessageHandler(Filters.text, choose_name),
+            MessageHandler(Filters.text & (~ Filters.command), choose_name),
             CallbackQueryHandler(name_back),
         ],
         STEP_AGE: [
-            MessageHandler(Filters.text, choose_age),
+            MessageHandler(Filters.text & (~ Filters.command), choose_age),
             CallbackQueryHandler(age_back),
         ],
         STEP_EDUCATION: [CallbackQueryHandler(choose_education)],
@@ -765,6 +860,10 @@ cv_handler = ConversationHandler(
         STEP_PHOTO: [
             MessageHandler(Filters.photo, check_user_photo),
             CallbackQueryHandler(photo_pass, pattern='^back_cv$|^пропустить_фото$'),
+        ],
+        STEP_CONTACT: [
+            MessageHandler(Filters.contact, get_contact),
+            MessageHandler(Filters.text & (~ Filters.command), get_contact_fail),
         ],
         STEP_UPDATE_CV: [
             CallbackQueryHandler(manage_choosen_button, pattern=input_patterns),
@@ -775,9 +874,9 @@ cv_handler = ConversationHandler(
         ],
     },
     fallbacks=[
-        MessageHandler(Filters.text | Filters.photo | Filters.video, cv_fallback),
-        CallbackQueryHandler(end_describing_cv, pattern='^' + str(END) + '$'),
-        CommandHandler('start', start),
+        MessageHandler(Filters.text & (~ Filters.command) | Filters.photo | Filters.video, cv_fallback),
+        CallbackQueryHandler(end_describing_cv, pattern='^' + str(STEP_CV_END) + '$'),
+        CommandHandler('stop', cancel_conversation),
     ],
     allow_reentry=True
 )

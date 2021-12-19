@@ -15,6 +15,7 @@ model_safe = 'e9576d86d2004ed1a38ba0cf39ecb4b1'
 
 dbase = DBase()
 
+
 def make_photo_path(photo, update, context):
     tg_id = update.effective_user.id
     user_photo = context.bot.getFile(photo.file_id)
@@ -22,6 +23,7 @@ def make_photo_path(photo, update, context):
     file_path = os.path.join('downloads', f'{tg_id}', f'{photo.file_id}.jpg')
     user_photo.download(file_path)
     return file_path
+
 
 # Функция проверяет что на картинке человек и нет контента для взрослых
 def is_human_and_sfw(file_name):
@@ -70,10 +72,12 @@ def make_location_file():
     with open('locations.json', 'w', encoding='utf-8') as f:
         json.dump(response, f, ensure_ascii=False, indent=4)
 
+
 def clear_photo(tg_id):
     files = os.listdir(path=f'downloads/{tg_id}/')
     for file in files:
         os.remove(f'downloads/{tg_id}/{file}')
+
 
 # Преобразуем пользовательскую локацию в структурированный формат
 def update_user_location(user_location):
@@ -121,6 +125,21 @@ def update_user_location(user_location):
     return user_location
 
 
+def find_firstname(name):
+    with open('russian_names.json', encoding='utf-8-sig') as f:
+        response = json.load(f)
+        firstname_list = []
+    full_name = name.lower().split()
+    for name in full_name:
+        for subject in response:
+            if subject['Name'].lower() == name:
+                firstname_list.append(subject['Name'])
+    if len(firstname_list) >= 1:
+        return firstname_list[0]
+    else:
+        return False
+
+
 def make_station_numbers_set(user_location):
     numbers = []
     with open('locations.json', encoding='utf-8') as f:
@@ -163,6 +182,7 @@ def print_location(tg_id, cv_or_filter):
     text = AdmArea_text + District_text + Station_text + Line_text
     return text
 
+
 def firsttime_user(tg_id, cv_or_filter):
     user = dbase.db_client.users.find_one({'tg_id': tg_id})
     if user[cv_or_filter]['first_time']:
@@ -179,15 +199,34 @@ def print_specialisation(tg_id, cv_or_filter):
         specialisation = ', '.join(user[cv_or_filter]['specialisation'])
     return specialisation
 
+
 def print_filter_age(tg_id):
     user = dbase.db_client.users.find_one({'tg_id': tg_id})
     text = f"от {user['filter']['age'][0]} до {user['filter']['age'][1]}"
     return text
 
 
-def print_cv(tg_id):
+def print_cv(main_tg_id, tg_id):
+    # user is user that we should show
+    # main user is user who look at user
     user = dbase.db_client.users.find_one({'tg_id': tg_id})
-    if user['cv']['speciality'] == 'Врач':
+    main_user = dbase.db_client.users.find_one({'tg_id': main_tg_id})
+    balance = main_user['balance']
+    if tg_id in main_user['paid_cv']:
+        paid = True
+        paid_text = ''
+    else:
+        paid = False
+        paid_text = '''
+Данная анкета <b>не оплачена</b>, для возможности смотреть ФИО, фото и контакты, необходимо оплатить анкету.
+'''
+    if (user['cv'].get('photo') and paid is True):
+        photo_text = 'Чтобы посмотреть фотографию, нажмите /photo'
+    elif (user['cv'].get('photo') and paid is False):
+        photo_text = 'Для просмотра необходимо оплатить анкету'
+    else:
+        photo_text = 'Фото не добавлялось'
+    if user['cv']['speciality'] == 'Стоматолог':
         specialisation_text = f'''\n<b>Специализация:</b> {print_specialisation(tg_id, 'cv')}'''
         education_text = ''
     else:
@@ -198,9 +237,11 @@ def print_cv(tg_id):
             else 'не указано'}'''
         )
     text = f'''
+Ваш <b>текущий баланс</b> составляет {balance} рублей.
+{paid_text}
 <b>ФИО:</b> {user['cv']['name']
-        if user['cv'].get('name')
-        else 'не указано'}
+        if paid is True
+        else f"{user['cv']['first_name']} ********"}
 <b>Возраст:</b> {user['cv']['age']
         if user['cv'].get('age')
         else 'не указан'}{education_text}
@@ -217,16 +258,19 @@ def print_cv(tg_id):
         if user['cv'].get('salary')
         else 'Не важно'}
 <b>Предпочитительное место работы:</b>\n{print_location(tg_id, 'cv')}
-<b>Фото:</b> {'Чтобы посмотреть фотографию, нажмите /photo'
-        if user['cv'].get('photo')
-        else 'Фото не добавлялось'}
+<b>Номер телефона:</b> {user['cv']['phone']
+        if paid is True
+        else 'Для просмотра необходимо оплатить анкету'}
+<b>Фото:</b> {photo_text}
 '''
     return text
 
 
 if __name__ == '__main__':
     # make_location_file()
-    files = os.listdir(path='downloads/125929447')
-    for file in files:
-        file_name = file
-    print(is_human_and_sfw(f'images/125929447/{file_name}'))
+    # files = os.listdir(path='downloads/125929447')
+    # for file in files:
+    #     file_name = file
+    # print(is_human_and_sfw(f'images/125929447/{file_name}'))
+
+    find_firstname('Сергей Анатольевич Ясинский')
