@@ -27,7 +27,6 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
-settings.py
 # PyInstaller
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
@@ -57,7 +56,6 @@ coverage.xml
 
 # Django stuff:
 *.log
-local_settings.py
 db.sqlite3
 
 # Flask stuff:
@@ -125,16 +123,13 @@ dmypy.json
 
 # VSCODE
 
-settings.py
 *.log
-.vscode/
 .idea/
 env/
 .DS_Store
-__pycache__/
+**/__pycache__
 .venv
 setup.cfg
-.vscode/
 
 #images
 downloads/
