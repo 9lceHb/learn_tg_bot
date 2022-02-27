@@ -1,20 +1,15 @@
 from telegram import ParseMode
-from payments import payment_conv_handler
-from telegram.ext import (
-    ConversationHandler,
-    CallbackQueryHandler,
-    MessageHandler,
-    Filters
-)
-from DbFolder.db_file import DBase
-from keyboards import (
-    start_keyboard,
-    personal_area_keyboard,
+from telegram.ext import CallbackQueryHandler, ConversationHandler, Filters, MessageHandler
+
+from bot.db import DBase
+from bot.keyboards import (  # STEP_SUPPORT,; STEP_PAYMENT_BACK
     STEP_MANAGE_AREA,
     STEP_SAVE_ISSUE,
-    # STEP_SUPPORT,
-    # STEP_PAYMENT_BACK
+    personal_area_keyboard,
+    start_keyboard,
 )
+from bot.payments import payment_conv_handler
+
 dbase = DBase()
 
 

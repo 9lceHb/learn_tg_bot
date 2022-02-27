@@ -1,9 +1,7 @@
-from utils import firsttime_user
-from DbFolder.db_file import DBase
-from keyboards import (
-    start_keyboard,
-    find_work_keyboard
-)
+from bot.db import DBase
+from bot.keyboards import find_work_keyboard, start_keyboard
+from bot.utils import firsttime_user
+
 dbase = DBase()
 
 

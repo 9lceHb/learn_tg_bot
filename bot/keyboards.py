@@ -1,12 +1,14 @@
+from emoji import emojize
 from telegram import (
     InlineKeyboardButton,
     InlineKeyboardMarkup,
+    KeyboardButton,
     ReplyKeyboardMarkup,
-    KeyboardButton
 )
-from utils import firsttime_user
-from emoji import emojize
-from DbFolder.db_file import DBase
+
+from bot.db import DBase
+from bot.utils import firsttime_user
+
 dbase = DBase()
 (
     STEP_NAME,

@@ -1,56 +1,58 @@
-import os
 import base64
+import os
+
 from telegram import ParseMode
-from utils import (
-    is_human_and_sfw,
-    update_user_location,
-    make_station_numbers_set,
-    make_photo_path,
-    print_location,
-    firsttime_user,
-    print_specialisation,
-    clear_photo,
-    find_firstname
-)
-from DbFolder.db_file import DBase
-from handlers import start_keyboard
 from telegram.ext import (
-    MessageHandler,
-    Filters,
-    ConversationHandler,
     CallbackQueryHandler,
     CommandHandler,
+    ConversationHandler,
+    Filters,
+    MessageHandler,
 )
 
-from keyboards import (
+from bot.db import DBase
+from bot.keyboards import (
+    STEP_AGE,
+    STEP_BACK,
+    STEP_CONTACT,
+    STEP_CV_END,
+    STEP_DELETE,
+    STEP_EDUCATION,
+    STEP_EXPERIENCE,
+    STEP_LOCATION,
+    STEP_NAME,
+    STEP_OTHER,
+    STEP_PHOTO,
+    STEP_SALARY,
+    STEP_SCHEDULE,
+    STEP_SPECIALISATION,
+    STEP_SPECIALITY,
+    STEP_UPDATE_CV,
+    back_keyboard,
+    contact_keyboard,
     cv_main_keyboard,
     cv_other_keyboard,
-    speciality_keyboard,
-    specialisation_keyboard,
-    schedule_keyboard,
-    salary_keyboard,
     education_keyboard,
     experience_keyboard,
     photo_pass_keyboard,
-    back_keyboard,
-    contact_keyboard,
-    STEP_NAME,
-    STEP_AGE,
-    STEP_EXPERIENCE,
-    STEP_LOCATION,
-    STEP_UPDATE_CV,
-    STEP_PHOTO,
-    STEP_SPECIALITY,
-    STEP_SPECIALISATION,
-    STEP_OTHER,
-    STEP_DELETE,
-    STEP_SCHEDULE,
-    STEP_SALARY,
-    STEP_EDUCATION,
-    STEP_BACK,
-    STEP_CONTACT,
-    STEP_CV_END
+    salary_keyboard,
+    schedule_keyboard,
+    specialisation_keyboard,
+    speciality_keyboard,
+    start_keyboard,
 )
+from bot.utils import (
+    clear_photo,
+    find_firstname,
+    firsttime_user,
+    is_human_and_sfw,
+    make_photo_path,
+    make_station_numbers_set,
+    print_location,
+    print_specialisation,
+    update_user_location,
+)
+
 dbase = DBase()
 
 

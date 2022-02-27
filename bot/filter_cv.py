@@ -1,53 +1,55 @@
 import base64
 import os
+
 from telegram import ParseMode
-from utils import (
-    update_user_location,
-    make_station_numbers_set,
-    print_filter_age,
-    print_location,
-    firsttime_user,
-    print_specialisation,
-    print_cv,
-    clear_photo,
-)
-from handlers import start_keyboard
 from telegram.ext import (
-    MessageHandler,
-    Filters,
-    ConversationHandler,
     CallbackQueryHandler,
     CommandHandler,
+    ConversationHandler,
+    Filters,
+    MessageHandler,
 )
-from payments import payment_conv_handler
 
-from DbFolder.db_file import DBase
-from keyboards import (
-    filter_main_keyboard,
-    filter_speciality_keyboard,
-    filter_invite_keyboard,
-    filter_specialisation_keyboard,
-    filter_schedule_keyboard,
-    filter_salary_keyboard,
-    filter_education_keyboard,
-    filter_experience_keyboard,
-    filter_photo_keyboard,
-    show_cv_keyboard,
-    pay_cv_fail_keyboard,
+from bot.db import DBase
+from bot.handlers import start_keyboard
+from bot.keyboards import (
     STEP_FILTER_AGE,
+    STEP_FILTER_EDUCATION,
+    STEP_FILTER_END,
     STEP_FILTER_EXPERIENCE,
     STEP_FILTER_LOCATION,
     STEP_FILTER_MAIN,
     STEP_FILTER_PHOTO,
-    STEP_FILTER_SPECIALITY,
-    STEP_WRITE_SPECIALITY,
-    STEP_FILTER_SPECIALISATION,
-    STEP_FILTER_SCHEDULE,
     STEP_FILTER_SALARY,
-    STEP_FILTER_EDUCATION,
+    STEP_FILTER_SCHEDULE,
+    STEP_FILTER_SPECIALISATION,
+    STEP_FILTER_SPECIALITY,
     STEP_SHOW_CV,
-    STEP_FILTER_END,
+    STEP_WRITE_SPECIALITY,
+    filter_education_keyboard,
+    filter_experience_keyboard,
+    filter_invite_keyboard,
+    filter_main_keyboard,
+    filter_photo_keyboard,
+    filter_salary_keyboard,
+    filter_schedule_keyboard,
+    filter_specialisation_keyboard,
+    filter_speciality_keyboard,
+    pay_cv_fail_keyboard,
+    show_cv_keyboard,
 )
+from bot.payments import payment_conv_handler
+from bot.utils import (
+    clear_photo,
+    firsttime_user,
+    make_station_numbers_set,
+    print_cv,
+    print_filter_age,
+    print_location,
+    print_specialisation,
+    update_user_location,
+)
+
 dbase = DBase()
 
 
