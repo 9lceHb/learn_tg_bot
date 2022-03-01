@@ -1,12 +1,13 @@
-import settings
-import clarifai_grpc.channel
-from clarifai_grpc.channel.clarifai_channel import ClarifaiChannel
-from clarifai_grpc.grpc.api import service_pb2_grpc
-from clarifai_grpc.grpc.api import service_pb2, resources_pb2
-import requests
 import json
 import os
-from DbFolder.db_file import DBase
+
+import clarifai_grpc.channel
+import requests
+from clarifai_grpc.channel.clarifai_channel import ClarifaiChannel
+from clarifai_grpc.grpc.api import resources_pb2, service_pb2, service_pb2_grpc
+
+from bot import settings
+from bot.db import DBase
 
 # clarifai модель определяет объект на фото
 model_object = 'aaa03c23b3724a16a56b629203edc62c'

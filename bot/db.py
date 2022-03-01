@@ -1,6 +1,8 @@
-from pymongo import MongoClient
-import settings
 import datetime
+
+from pymongo import MongoClient
+
+from bot import settings
 
 
 class DBase:

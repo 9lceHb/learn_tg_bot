@@ -1,30 +1,31 @@
-from telegram import LabeledPrice, ParseMode
-
-from telegram.ext import (
-    MessageHandler,
-    Filters,
-    ConversationHandler,
-    CallbackQueryHandler,
-    PreCheckoutQueryHandler
-)
 import datetime
-from utils import print_cv
-from DbFolder.db_file import DBase
-from keyboards import (
-    choose_amount_keyboard,
-    show_cv_keyboard,
-    back_payment_keyboard,
-    after_success_keyboard,
-    personal_area_keyboard,
-    STEP_SHOW_CV,
+
+from telegram import LabeledPrice, ParseMode
+from telegram.ext import (
+    CallbackQueryHandler,
+    ConversationHandler,
+    Filters,
+    MessageHandler,
+    PreCheckoutQueryHandler,
+)
+
+from bot.db import DBase
+from bot.keyboards import (
+    STEP_AFTER_PAYMENT,
     STEP_INVOICE,
+    STEP_MANAGE_AREA,
+    STEP_PAYMENT_BACK_AREA,
+    STEP_PAYMENT_BACK_FILTER,
     STEP_PAYMENT_DONE,
     STEP_PRECHECKOUT,
-    STEP_PAYMENT_BACK_FILTER,
-    STEP_PAYMENT_BACK_AREA,
-    STEP_AFTER_PAYMENT,
-    STEP_MANAGE_AREA
+    STEP_SHOW_CV,
+    after_success_keyboard,
+    back_payment_keyboard,
+    choose_amount_keyboard,
+    personal_area_keyboard,
+    show_cv_keyboard,
 )
+from bot.utils import print_cv
 
 dbase = DBase()
 
