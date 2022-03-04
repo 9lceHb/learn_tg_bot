@@ -11,7 +11,7 @@ from telegram.ext import (
 )
 
 from bot.db import DBase
-from bot.handlers import start_keyboard
+from bot.keyboards import start_keyboard
 from bot.keyboards import (
     STEP_FILTER_AGE,
     STEP_FILTER_EDUCATION,

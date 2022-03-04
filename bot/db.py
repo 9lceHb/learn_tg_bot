@@ -89,21 +89,21 @@ class DBase:
         """
         user = self.db_client.users.find_one({'tg_id': user_id})
         user_specialisations = set(user[cv_or_filter]['specialisation'])
-        user_specialisations = list(user_specialisations)
-        if cv_value in user_specialisations:
-            user_specialisations.remove(cv_value)
+        user_specialisations_list = list(user_specialisations)
+        if cv_value in user_specialisations_list:
+            user_specialisations_list.remove(cv_value)
         else:
-            user_specialisations.append(cv_value)
+            user_specialisations_list.append(cv_value)
         # TODO: нужно добавить проверку на None у user
         if cv_or_filter == 'cv':
             self.db_client.users.update_one(
                 {'_id': user['_id']},
-                {'$set': {'cv.specialisation': user_specialisations}}
+                {'$set': {'cv.specialisation': user_specialisations_list}}
             )
         elif cv_or_filter == 'filter':
             self.db_client.users.update_one(
                 {'_id': user['_id']},
-                {'$set': {'filter.specialisation': user_specialisations}}
+                {'$set': {'filter.specialisation': user_specialisations_list}}
             )
 
     def create_issue(self, effective_user, text):

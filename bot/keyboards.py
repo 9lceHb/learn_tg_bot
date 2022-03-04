@@ -92,8 +92,8 @@ def start_keyboard():
         [InlineKeyboardButton(text=f'{smile_work} Найти работу', callback_data='Найти работу')],
         [InlineKeyboardButton(text=f'{smile_worker} Найти сотрудника', callback_data='Найти сотрудника')],
         [InlineKeyboardButton(text=f'{smile_area} Личный кабинет', callback_data='Личный кабинет')],
-        [InlineKeyboardButton(text=f'{smile_chair} удалить запись из базы', callback_data='удалить запись')],
     ]
+    # start_buttons.append([InlineKeyboardButton(text=f'{smile_chair} удалить запись из базы', callback_data='удалить запись')])
     return InlineKeyboardMarkup(start_buttons)
 
 
